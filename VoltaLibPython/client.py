@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import atexit
 import json
 import logging
 import os
@@ -258,7 +257,7 @@ class VoltaClient:
 
         def track(self, track_id: str) -> Any:
             return self.client._delete(f"/api/v1/library/tracks/{track_id}")
-        
+
 
     class _Library:
         def __init__(self, client: "VoltaClient") -> None:
@@ -377,3 +376,12 @@ class VoltaClient:
                 query (str): The search query string.
             """
             return self.client._get(f"{self.endpoint}/search?q={query}")
+        def artist(self, id: str) -> Any:
+            """
+            Get details of a specific artist by their ID.
+            Get famous tracks, all albums, and all related information.
+
+            Args:
+                id (str): The ID of the artist.
+            """
+            return self.client._get(f"{self.endpoint}/artists/{id}")

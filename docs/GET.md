@@ -9,8 +9,7 @@
   * [playlists()](#playlists)
 * [In global app](#get-in-global-app)
   * [search()](#search)
-  * [artists()](#artists-1)
-
+  * [artist()](#artist-1)
 
 ## GET in your library
 

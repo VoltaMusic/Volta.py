@@ -75,3 +75,101 @@ class TestCatalogSearch:
 
         assert result == {"tracks": []}
         assert client.token == "new_token"
+
+
+class TestCatalogArtist:
+    def test_artist_success_returns_json(self, make_client, fake_session):
+        client = make_client()
+        fake_session.get_responses.append(
+            FakeResponse(
+                200,
+                {
+                    "id": "artist_1",
+                    "name": "Daft Punk",
+                    "top_tracks": [],
+                    "albums": [],
+                },
+            )
+        )
+
+        result = client.get.catalog.artist("artist_1")
+
+        assert result == {
+            "id": "artist_1",
+            "name": "Daft Punk",
+            "top_tracks": [],
+            "albums": [],
+        }
+
+    def test_artist_builds_expected_url(self, make_client, fake_session):
+        client = make_client()
+        fake_session.get_responses.append(FakeResponse(200, {}))
+
+        client.get.catalog.artist("artist_1")
+
+        method, url, headers, params = fake_session.calls[0]
+        assert method == "GET"
+        assert url.endswith("/api/v1/artists/artist_1")
+        assert headers["Authorization"] == "Bearer initial_token"
+        assert params is None
+
+    def test_artist_uses_path_segment_not_query_param(self, make_client, fake_session):
+        # Contrairement à search(), l'id est un segment de chemin — pas de
+        # "?" dans l'URL générée.
+        client = make_client()
+        fake_session.get_responses.append(FakeResponse(200, {}))
+
+        client.get.catalog.artist("artist_1")
+
+        _, url, _, _ = fake_session.calls[0]
+        assert "?" not in url
+
+    def test_artist_non_200_raises_api_error(self, make_client, fake_session):
+        client = make_client()
+        fake_session.get_responses.append(FakeResponse(404, text="artist not found"))
+
+        with pytest.raises(APIError):
+            client.get.catalog.artist("unknown_id")
+
+    def test_artist_401_refreshes_token_and_retries_transparently(
+        self, make_client, fake_session
+    ):
+        client = make_client({"access_token": "old_token", "expires_in": 3600})
+
+        fake_session.get_responses.append(FakeResponse(401, text="invalid"))
+        fake_session.post_responses.append(
+            FakeResponse(200, {"access_token": "new_token", "expires_in": 3600})
+        )
+        fake_session.get_responses.append(FakeResponse(200, {"id": "artist_1"}))
+
+        result = client.get.catalog.artist("artist_1")
+
+        assert result == {"id": "artist_1"}
+        assert client.token == "new_token"
+
+    def test_artist_401_twice_raises_after_single_retry(self, make_client, fake_session):
+        client = make_client({"access_token": "old_token", "expires_in": 3600})
+
+        fake_session.get_responses.append(FakeResponse(401, text="invalid"))
+        fake_session.post_responses.append(
+            FakeResponse(200, {"access_token": "new_token", "expires_in": 3600})
+        )
+        fake_session.get_responses.append(FakeResponse(401, text="invalid"))
+
+        with pytest.raises(APIError):
+            client.get.catalog.artist("artist_1")
+
+        get_calls = [c for c in fake_session.calls if c[0] == "GET"]
+        assert len(get_calls) == 2
+
+    def test_artist_different_ids_build_different_urls(self, make_client, fake_session):
+        client = make_client()
+        fake_session.get_responses.append(FakeResponse(200, {"id": "a1"}))
+        fake_session.get_responses.append(FakeResponse(200, {"id": "a2"}))
+
+        client.get.catalog.artist("a1")
+        client.get.catalog.artist("a2")
+
+        urls = [c[1] for c in fake_session.calls]
+        assert urls[0].endswith("/api/v1/artists/a1")
+        assert urls[1].endswith("/api/v1/artists/a2")

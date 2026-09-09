@@ -14,6 +14,7 @@ def main():
 
 def pause():
     input("Press Enter to exit and clear...")
+
 def clear():
     for filename in os.listdir("."):
         if filename.endswith(".json"):

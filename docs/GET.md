@@ -149,7 +149,7 @@ with VoltaClient() as client:
 ```
 
 ---
-### artists()
+### artist()
 > Get details of a specific artist by their ID.
 > Get famous tracks, all albums, and all related information.
 >

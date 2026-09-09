@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
 	name="VoltaLib",
-	version="0.6.1",
+	version="0.6.2",
 	description="VoltaLibPython packaged as VoltaLib",
 	packages=find_packages(exclude=("tests", "docs")),
 	include_package_data=True,

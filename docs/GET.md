@@ -1,19 +1,31 @@
 # GET method
 # Tables
-* [In your library](#get-in-your-library)
-  * [tracks()](#tracks)
-  * [albums()](#albums)
-  * [artists()](#artists)
-    - [artist_albums()](#artist_albums)
-    - [artist_tracks()](#artist_tracks)
-  * [playlists()](#playlists)
-* [In global app](#get-in-global-app)
-  * [search()](#search)
+- [GET method](#get-method)
+- [Tables](#tables)
+  - [GET in your library](#get-in-your-library)
+      - [Base:](#base)
+    - [tracks()](#tracks)
+      - [Use:](#use)
+    - [albums()](#albums)
+      - [Use:](#use-1)
+    - [artists()](#artists)
+      - [Use:](#use-2)
+    - [artist\_albums()](#artist_albums)
+      - [Use:](#use-3)
+    - [artist\_tracks()](#artist_tracks)
+      - [Use:](#use-4)
+    - [playlists()](#playlists)
+  - [GET in global app](#get-in-global-app)
+      - [Base:](#base-1)
+    - [search()](#search)
+      - [Use:](#use-5)
+    - [artists()](#artists-1)
+      - [Use:](#use-6)
 
 
 ## GET in your library
 
-Fetch many data in your library, 
+Fetch many data in your library,
 you cannot use this for a global use or search.
 
 #### Base:
@@ -146,5 +158,18 @@ VoltaClient.get.catalog.
 ```python
 with VoltaClient() as client:
     client.get.catalog.search("Your query") # Search tracks, artists, albums
+```
 
+---
+### artists()
+> Get details of a specific artist by their ID.
+> Get famous tracks, all albums, and all related information.
+>
+> Args:
+> - id (str): The ID of the artist.
+
+#### Use:
+```python
+with VoltaClient() as client:
+    client.get.catalog.artist("Artists ID") # Search with the artists ID
 ```

@@ -379,6 +379,7 @@ class VoltaClient:
         def artist(self, id: str) -> Any:
             """
             Get details of a specific artist by their ID.
+            Get famous tracks, all albums, and all related information.
 
             Args:
                 id (str): The ID of the artist.

@@ -410,7 +410,7 @@ class VoltaClient:
             Args:
                 id (str): The ID of the playlist.
             """
-            # return self.client._get(f"{self.endpoint}/playlist/{id}")
+            #return self.client._get(f"{self.endpoint}/playlist/{id}")
             return NotImplementedError("catalog.playlist() is not implemented yet because the upstream playlist endpoint is currently not working")
         def home(self) -> Any:
             """

@@ -277,19 +277,28 @@ class TestCatalogPlaylist:
     scénarios que TestCatalogAlbum/TestCatalogTrack : succès, 401 avec
     retry, non-200 qui lève APIError)."""
 
-    def test_playlist_currently_always_returns_false(self, make_client, fake_session):
+    def test_playlist_currently_returns_not_implemented_error_instance(self, make_client, fake_session):
         client = make_client()
-
         result = client.get.catalog.playlist("pl_123")
+        assert isinstance(result, NotImplementedError)
 
-        assert result is False
+    def test_playlist_currently_returns_error_with_expected_message(self, make_client, fake_session):
+        client = make_client()
+        result = client.get.catalog.playlist("pl_123")
+        assert str(result) == "catalog.playlist() is not implemented yet because the upstream playlist endpoint is currently not working"
 
     def test_playlist_currently_never_calls_the_api(self, make_client, fake_session):
         client = make_client()
-
         client.get.catalog.playlist("pl_123")
-
         assert fake_session.calls == []
+
+    def test_playlist_does_not_raise(self, make_client, fake_session):
+        client = make_client()
+        # c'est un `return`, pas un `raise` — l'appel ne doit jamais lever
+        try:
+            client.get.catalog.playlist("pl_123")
+        except NotImplementedError:
+            pytest.fail("playlist() ne devrait pas lever, juste renvoyer la valeur")
 
 
 class TestCatalogHome:

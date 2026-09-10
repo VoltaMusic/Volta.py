@@ -20,4 +20,4 @@ where = ["."]
 exclude = ["tests", "docs"]
 
 [project.urls]
-Homepage = "https://github.com/Zerbaib/VoltaLibPython"
+Homepage = "https://github.com/VoltaMusic/Volta.py"

@@ -173,3 +173,254 @@ class TestCatalogArtist:
         urls = [c[1] for c in fake_session.calls]
         assert urls[0].endswith("/api/v1/artists/a1")
         assert urls[1].endswith("/api/v1/artists/a2")
+
+
+class TestCatalogAlbum:
+    def test_album_success_returns_json(self, make_client, fake_session):
+        client = make_client()
+        fake_session.get_responses.append(
+            FakeResponse(200, {"id": "al1", "title": "Discovery", "tracks": []})
+        )
+
+        result = client.get.catalog.album("al1")
+
+        assert result == {"id": "al1", "title": "Discovery", "tracks": []}
+
+    def test_album_builds_expected_url(self, make_client, fake_session):
+        client = make_client()
+        fake_session.get_responses.append(FakeResponse(200, {}))
+
+        client.get.catalog.album("al1")
+
+        method, url, headers, params = fake_session.calls[0]
+        assert method == "GET"
+        assert url.endswith("/api/v1/album/al1")
+        assert headers["Authorization"] == "Bearer initial_token"
+        assert params is None
+
+    def test_album_non_200_raises_api_error(self, make_client, fake_session):
+        client = make_client()
+        fake_session.get_responses.append(FakeResponse(404, text="album not found"))
+
+        with pytest.raises(APIError):
+            client.get.catalog.album("unknown_id")
+
+    def test_album_401_refreshes_token_and_retries_transparently(
+        self, make_client, fake_session
+    ):
+        client = make_client({"access_token": "old_token", "expires_in": 3600})
+
+        fake_session.get_responses.append(FakeResponse(401, text="invalid"))
+        fake_session.post_responses.append(
+            FakeResponse(200, {"access_token": "new_token", "expires_in": 3600})
+        )
+        fake_session.get_responses.append(FakeResponse(200, {"id": "al1"}))
+
+        result = client.get.catalog.album("al1")
+
+        assert result == {"id": "al1"}
+        assert client.token == "new_token"
+
+
+class TestCatalogTrack:
+    def test_track_success_returns_json(self, make_client, fake_session):
+        client = make_client()
+        fake_session.get_responses.append(
+            FakeResponse(200, {"id": "t1", "title": "One More Time"})
+        )
+
+        result = client.get.catalog.track("t1")
+
+        assert result == {"id": "t1", "title": "One More Time"}
+
+    def test_track_builds_expected_url(self, make_client, fake_session):
+        client = make_client()
+        fake_session.get_responses.append(FakeResponse(200, {}))
+
+        client.get.catalog.track("t1")
+
+        method, url, headers, params = fake_session.calls[0]
+        assert method == "GET"
+        assert url.endswith("/api/v1/track/t1")
+        assert params is None
+
+    def test_track_non_200_raises_api_error(self, make_client, fake_session):
+        client = make_client()
+        fake_session.get_responses.append(FakeResponse(404, text="track not found"))
+
+        with pytest.raises(APIError):
+            client.get.catalog.track("unknown_id")
+
+    def test_track_401_refreshes_token_and_retries_transparently(
+        self, make_client, fake_session
+    ):
+        client = make_client({"access_token": "old_token", "expires_in": 3600})
+
+        fake_session.get_responses.append(FakeResponse(401, text="invalid"))
+        fake_session.post_responses.append(
+            FakeResponse(200, {"access_token": "new_token", "expires_in": 3600})
+        )
+        fake_session.get_responses.append(FakeResponse(200, {"id": "t1"}))
+
+        result = client.get.catalog.track("t1")
+
+        assert result == {"id": "t1"}
+        assert client.token == "new_token"
+
+
+class TestCatalogPlaylist:
+    def test_playlist_currently_raises_not_implemented_error(self, make_client, fake_session):
+        client = make_client()
+        with pytest.raises(NotImplementedError):
+            client.get.catalog.playlist("pl_123")
+
+    def test_playlist_raises_with_expected_message(self, make_client, fake_session):
+        client = make_client()
+        with pytest.raises(NotImplementedError) as exc_info:
+            client.get.catalog.playlist("pl_123")
+        assert str(exc_info.value) == "catalog.playlist() is not implemented yet because the upstream playlist endpoint is currently not working"
+
+    def test_playlist_currently_never_calls_the_api(self, make_client, fake_session):
+        client = make_client()
+        with pytest.raises(NotImplementedError):
+            client.get.catalog.playlist("pl_123")
+        assert fake_session.calls == []
+
+
+class TestCatalogHome:
+    def test_home_success_returns_json(self, make_client, fake_session):
+        client = make_client()
+        fake_session.get_responses.append(
+            FakeResponse(200, {"sections": [{"title": "Nouveautés", "items": []}]})
+        )
+
+        result = client.get.catalog.home()
+
+        assert result == {"sections": [{"title": "Nouveautés", "items": []}]}
+
+    def test_home_builds_expected_url(self, make_client, fake_session):
+        client = make_client()
+        fake_session.get_responses.append(FakeResponse(200, {}))
+
+        client.get.catalog.home()
+
+        method, url, headers, params = fake_session.calls[0]
+        assert method == "GET"
+        assert url.endswith("/api/v1/home")
+        assert params is None
+
+    def test_home_non_200_raises_api_error(self, make_client, fake_session):
+        client = make_client()
+        fake_session.get_responses.append(FakeResponse(500, text="internal error"))
+
+        with pytest.raises(APIError):
+            client.get.catalog.home()
+
+    def test_home_401_refreshes_token_and_retries_transparently(
+        self, make_client, fake_session
+    ):
+        client = make_client({"access_token": "old_token", "expires_in": 3600})
+
+        fake_session.get_responses.append(FakeResponse(401, text="invalid"))
+        fake_session.post_responses.append(
+            FakeResponse(200, {"access_token": "new_token", "expires_in": 3600})
+        )
+        fake_session.get_responses.append(FakeResponse(200, {"sections": []}))
+
+        result = client.get.catalog.home()
+
+        assert result == {"sections": []}
+        assert client.token == "new_token"
+
+
+class TestCatalogPlaybackState:
+    def test_state_success_returns_json(self, make_client, fake_session):
+        client = make_client()
+        fake_session.get_responses.append(
+            FakeResponse(200, {"is_playing": True, "track_id": "t1"})
+        )
+
+        result = client.get.catalog.state()
+
+        assert result == {"is_playing": True, "track_id": "t1"}
+
+    def test_state_builds_expected_url(self, make_client, fake_session):
+        client = make_client()
+        fake_session.get_responses.append(FakeResponse(200, {}))
+
+        client.get.catalog.state()
+
+        method, url, headers, params = fake_session.calls[0]
+        assert method == "GET"
+        assert url.endswith("/api/v1/playback/state")
+        assert params is None
+
+    def test_state_non_200_raises_api_error(self, make_client, fake_session):
+        client = make_client()
+        fake_session.get_responses.append(FakeResponse(500, text="internal error"))
+
+        with pytest.raises(APIError):
+            client.get.catalog.state()
+
+    def test_state_401_refreshes_token_and_retries_transparently(
+        self, make_client, fake_session
+    ):
+        client = make_client({"access_token": "old_token", "expires_in": 3600})
+
+        fake_session.get_responses.append(FakeResponse(401, text="invalid"))
+        fake_session.post_responses.append(
+            FakeResponse(200, {"access_token": "new_token", "expires_in": 3600})
+        )
+        fake_session.get_responses.append(FakeResponse(200, {"is_playing": False}))
+
+        result = client.get.catalog.state()
+
+        assert result == {"is_playing": False}
+        assert client.token == "new_token"
+
+
+class TestCatalogMe:
+    def test_me_success_returns_json(self, make_client, fake_session):
+        client = make_client()
+        fake_session.get_responses.append(
+            FakeResponse(200, {"username": "hugoh", "email": "hugo@example.com"})
+        )
+
+        result = client.get.catalog.me()
+
+        assert result == {"username": "hugoh", "email": "hugo@example.com"}
+
+    def test_me_builds_expected_url(self, make_client, fake_session):
+        client = make_client()
+        fake_session.get_responses.append(FakeResponse(200, {}))
+
+        client.get.catalog.me()
+
+        method, url, headers, params = fake_session.calls[0]
+        assert method == "GET"
+        assert url.endswith("/api/v1/auth/me")
+        assert headers["Authorization"] == "Bearer initial_token"
+        assert params is None
+
+    def test_me_non_200_raises_api_error(self, make_client, fake_session):
+        client = make_client()
+        fake_session.get_responses.append(FakeResponse(403, text="forbidden"))
+
+        with pytest.raises(APIError):
+            client.get.catalog.me()
+
+    def test_me_401_refreshes_token_and_retries_transparently(
+        self, make_client, fake_session
+    ):
+        client = make_client({"access_token": "old_token", "expires_in": 3600})
+
+        fake_session.get_responses.append(FakeResponse(401, text="invalid"))
+        fake_session.post_responses.append(
+            FakeResponse(200, {"access_token": "new_token", "expires_in": 3600})
+        )
+        fake_session.get_responses.append(FakeResponse(200, {"username": "hugoh"}))
+
+        result = client.get.catalog.me()
+
+        assert result == {"username": "hugoh"}
+        assert client.token == "new_token"

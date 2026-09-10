@@ -1,15 +1,38 @@
 # GET method
 # Tables
-* [In your library](#get-in-your-library)
-  * [tracks()](#tracks)
-  * [albums()](#albums)
-  * [artists()](#artists)
-    - [artist_albums()](#artist_albums)
-    - [artist_tracks()](#artist_tracks)
-  * [playlists()](#playlists)
-* [In global app](#get-in-global-app)
-  * [search()](#search)
-  * [artist()](#artist-1)
+- [GET method](#get-method)
+- [Tables](#tables)
+  - [GET in your library](#get-in-your-library)
+      - [Base:](#base)
+    - [tracks()](#tracks)
+      - [Use:](#use)
+    - [albums()](#albums)
+      - [Use:](#use-1)
+    - [artists()](#artists)
+      - [Use:](#use-2)
+    - [artist\_albums()](#artist_albums)
+      - [Use:](#use-3)
+    - [artist\_tracks()](#artist_tracks)
+      - [Use:](#use-4)
+    - [playlists()](#playlists)
+  - [GET in global app](#get-in-global-app)
+      - [Base:](#base-1)
+    - [search()](#search)
+      - [Use:](#use-5)
+    - [artist()](#artist)
+      - [Use:](#use-6)
+    - [album()](#album)
+      - [Use:](#use-7)
+    - [track()](#track)
+      - [Use:](#use-8)
+    - [playlist()](#playlist)
+      - [Use:](#use-9)
+    - [home()](#home)
+      - [Use:](#use-10)
+    - [state()](#state)
+      - [Use:](#use-11)
+    - [me()](#me)
+      - [Use:](#use-12)
 
 ## GET in your library
 
@@ -160,4 +183,86 @@ with VoltaClient() as client:
 ```python
 with VoltaClient() as client:
     client.get.catalog.artist("Artists ID") # Search with the artists ID
+```
+
+
+---
+### album()
+> Get details of a specific album by its ID.
+> Get all tracks of the album.
+>
+> Args:
+> - id (str): The ID of the album.
+
+#### Use:
+```python
+with VoltaClient() as client:
+    client.get.catalog.album("Album ID")
+```
+
+
+---
+### track()
+> Get metadata of a specific track by its ID.
+>
+> Args:
+> - id (str): The ID of the track.
+
+#### Use:
+```python
+with VoltaClient() as client:
+    client.get.catalog.track("Track ID")
+```
+
+
+---
+### playlist()
+> Get details of a specific public playlist by its ID.
+> Get all tracks of the playlist.
+>
+> Args:
+> - id (str): The ID of the playlist.
+
+**Not working yet**: currently returns a `NotImplementedError` instance and does not call the API.
+
+#### Use:
+```python
+with VoltaClient() as client:
+    client.get.catalog.playlist("Playlist ID")
+```
+
+
+---
+### home()
+> Get the home page data,
+> including recommended tracks, albums, artists, and playlists.
+
+#### Use:
+```python
+with VoltaClient() as client:
+    client.get.catalog.home()
+```
+
+
+---
+### state()
+> Get the current state of the catalog,
+> including available genres, moods, and other metadata.
+
+#### Use:
+```python
+with VoltaClient() as client:
+    client.get.catalog.state()
+```
+
+
+---
+### me()
+> Get the current user's profile information,
+> including username, email, and subscription status.
+
+#### Use:
+```python
+with VoltaClient() as client:
+    client.get.catalog.me()
 ```

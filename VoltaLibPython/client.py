@@ -422,7 +422,7 @@ class VoltaClient:
 
         def state(self) -> Any:
             """
-            Get the current state of the catalog, including available genres, moods, and other metadata.
+            Get the current playback state (endpoint: /playback/state).
             """
             return self.client._get(f"{self.endpoint}/playback/state")
         def me(self) -> Any:

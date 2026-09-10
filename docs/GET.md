@@ -223,7 +223,7 @@ with VoltaClient() as client:
 > Args:
 > - id (str): The ID of the playlist.
 
-**Not Working**
+**Not working yet**: currently returns a `NotImplementedError` instance and does not call the API.
 
 #### Use:
 ```python

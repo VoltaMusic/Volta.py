@@ -269,36 +269,22 @@ class TestCatalogTrack:
 
 
 class TestCatalogPlaylist:
-    """La vraie requête est actuellement commentée dans client.py :
-    `playlist()` renvoie toujours `False` sans jamais appeler l'API. Ces
-    tests verrouillent ce comportement actuel — ils échoueront (à raison)
-    le jour où l'appel réel sera réactivé, ce qui te rappellera de les
-    mettre à jour à ce moment-là (retirer ce test et écrire les mêmes
-    scénarios que TestCatalogAlbum/TestCatalogTrack : succès, 401 avec
-    retry, non-200 qui lève APIError)."""
-
-    def test_playlist_currently_returns_not_implemented_error_instance(self, make_client, fake_session):
+    def test_playlist_currently_raises_not_implemented_error(self, make_client, fake_session):
         client = make_client()
-        result = client.get.catalog.playlist("pl_123")
-        assert isinstance(result, NotImplementedError)
+        with pytest.raises(NotImplementedError):
+            client.get.catalog.playlist("pl_123")
 
-    def test_playlist_currently_returns_error_with_expected_message(self, make_client, fake_session):
+    def test_playlist_raises_with_expected_message(self, make_client, fake_session):
         client = make_client()
-        result = client.get.catalog.playlist("pl_123")
-        assert str(result) == "catalog.playlist() is not implemented yet because the upstream playlist endpoint is currently not working"
+        with pytest.raises(NotImplementedError) as exc_info:
+            client.get.catalog.playlist("pl_123")
+        assert str(exc_info.value) == "catalog.playlist() is not implemented yet because the upstream playlist endpoint is currently not working"
 
     def test_playlist_currently_never_calls_the_api(self, make_client, fake_session):
         client = make_client()
-        client.get.catalog.playlist("pl_123")
-        assert fake_session.calls == []
-
-    def test_playlist_does_not_raise(self, make_client, fake_session):
-        client = make_client()
-        # c'est un `return`, pas un `raise` — l'appel ne doit jamais lever
-        try:
+        with pytest.raises(NotImplementedError):
             client.get.catalog.playlist("pl_123")
-        except NotImplementedError:
-            pytest.fail("playlist() ne devrait pas lever, juste renvoyer la valeur")
+        assert fake_session.calls == []
 
 
 class TestCatalogHome:

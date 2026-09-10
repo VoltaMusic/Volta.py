@@ -411,7 +411,7 @@ class VoltaClient:
                 id (str): The ID of the playlist.
             """
             # return self.client._get(f"{self.endpoint}/playlist/{id}")
-            return None
+            return False
         def home(self) -> Any:
             """
             Get the home page data, including recommended tracks, albums, artists, and playlists.

@@ -161,7 +161,7 @@ class VoltaClient:
         """
         Analyse la réponse HTTP et lève l'exception spécifique adaptée.
         """
-        if response.status_code == 200:
+        if 200 <= response.status_code < 300:
             try:
                 return response.json()
             except ValueError:

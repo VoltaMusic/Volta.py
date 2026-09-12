@@ -8,8 +8,7 @@ def main():
         print("Starting test")
         #var = client.get.catalog.playlist("bb7d0e57-bb01-4491-88b6-ce62ee3d75f0")
         client.delete.track("890441672")
-        var = client.get.library.albums()
-        var = client.get.library.tracks()
+        var = client.get.catalog.me()
         print("Variable was fetched, saving to temp.json")
 
         with open("temp.json", "w") as f:

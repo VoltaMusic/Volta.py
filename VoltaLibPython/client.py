@@ -12,7 +12,13 @@ from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 from dotenv import load_dotenv
 
-from .exceptions import APIError
+from .exceptions import (
+    APIError,
+    AuthenticationError,
+    NotFoundError,
+    RateLimitError,
+    ServerError,
+)
 
 load_dotenv()
 
@@ -151,6 +157,28 @@ class VoltaClient:
 
     # -- Rafraîchissement suite à un 401 ------------------------------------
 
+    def _handle_response(self, response: requests.Response) -> Any:
+        """
+        Analyse la réponse HTTP et lève l'exception spécifique adaptée.
+        """
+        if 200 <= response.status_code < 300:
+            try:
+                return response.json()
+            except ValueError:
+                return response.text
+
+        error_msg = f"API request failed [{response.status_code}] sur {response.url} - {response.text}"
+        
+        if response.status_code == 401:
+            raise AuthenticationError(error_msg, status_code=401, response_text=response.text)
+        elif response.status_code == 404:
+            raise NotFoundError(error_msg, status_code=404, response_text=response.text)
+        elif response.status_code == 429:
+            raise RateLimitError(error_msg, status_code=429, response_text=response.text)
+        elif 500 <= response.status_code < 600:
+            raise ServerError(error_msg, status_code=response.status_code, response_text=response.text)
+        else:
+            raise APIError(error_msg, status_code=response.status_code, response_text=response.text)
     def _handle_unauthorized(self) -> None:
         """Force un nouveau jeton suite à un 401 (jeton invalide/expiré côté
         serveur avant même notre propre échéance de refresh), de façon
@@ -176,9 +204,7 @@ class VoltaClient:
         if response.status_code == 401 and _retry:
             self._handle_unauthorized()
             return self._get(endpoint, params, _retry=False)
-        if response.status_code != 200:
-            raise APIError(f"GET request failed: {response.status_code} - {response.text}")
-        return response.json()
+        return self._handle_response(response) 
     def _post(
         self, endpoint: str, data: dict[str, Any], _retry: bool = True
     ) -> Any:
@@ -189,9 +215,7 @@ class VoltaClient:
         if response.status_code == 401 and _retry:
             self._handle_unauthorized()
             return self._post(endpoint, data, _retry=False)
-        if response.status_code != 200:
-            raise APIError(f"POST request failed: {response.status_code} - {response.text}")
-        return response.json()
+        return self._handle_response(response) 
     def _put(
         self, endpoint: str, data: dict[str, Any], _retry: bool = True
     ) -> Any:
@@ -202,9 +226,7 @@ class VoltaClient:
         if response.status_code == 401 and _retry:
             self._handle_unauthorized()
             return self._put(endpoint, data, _retry=False)
-        if response.status_code != 200:
-            raise APIError(f"PUT request failed: {response.status_code} - {response.text}")
-        return response.json()
+        return self._handle_response(response) 
     def _delete(
         self, endpoint: str, data: Optional[dict[str, Any]] = None, _retry: bool = True,
     ) -> Any:
@@ -215,17 +237,12 @@ class VoltaClient:
         if response.status_code == 401 and _retry:
             self._handle_unauthorized()
             return self._delete(endpoint, data, _retry=False)
-        if response.status_code != 200:
-            raise APIError(f"DELETE request failed: {response.status_code} - {response.text}")
-        return response.json()
+        return self._handle_response(response) 
 
 
     # -- Sous-espaces ---------------------------------------------------
 
     class _GET:
-        """Espace de noms pour les requêtes GET. Utilise le client parent,
-        ne crée jamais de nouvelle instance de VoltaClient."""
-
         def __init__(self, client: "VoltaClient") -> None:
             self.client = client
             self.library = VoltaClient._Library(client)
@@ -258,6 +275,7 @@ class VoltaClient:
         def track(self, track_id: str) -> Any:
             return self.client._delete(f"/api/v1/library/tracks/{track_id}")
 
+    # -- Sous-espaces de l'API liés à VoltaClient -----------------------------
 
     class _Library:
         def __init__(self, client: "VoltaClient") -> None:

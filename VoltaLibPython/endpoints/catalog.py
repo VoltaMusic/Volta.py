@@ -61,7 +61,10 @@ class Catalog:
         Get the home page data, including recommended tracks, albums, artists, and playlists.
         """
         return self.client._get(f"{self.endpoint}/home")
-
+    def stream(self, id:str) -> Any:
+        """
+        """
+        return self.client._get(f"{self.endpoint}/stream?track_id={id}")
     # GET /api/v1/stream?track_id=… stream:read
 
     def state(self) -> Any:

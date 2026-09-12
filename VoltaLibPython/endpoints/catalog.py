@@ -63,10 +63,13 @@ class Catalog:
         return self.client._get(f"{self.endpoint}/home")
     def stream(self, id:str) -> Any:
         """
+        Get info of the song andthe streaming url
+        (Streaming url: /api/v1/stream_relay_ref?ref=volta_relay_ref_xxxxxxxxxxxxxxxx).
+
+        Args:
+            id (str): The ID of the track.
         """
         return self.client._get(f"{self.endpoint}/stream?track_id={id}")
-    # GET /api/v1/stream?track_id=… stream:read
-
     def state(self) -> Any:
         """
         Get the current playback state (endpoint: /playback/state).

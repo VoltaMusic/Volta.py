@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "VoltaLib"
-version = "0.7.4"
+version = "0.7.6"
 description = "VoltaLibPython packaged as VoltaLib"
 requires-python = ">=3.8"
 authors = [ { name = "Zerbaib" } ]
@@ -17,7 +17,7 @@ include-package-data = true
 
 [tool.setuptools.packages.find]
 where = ["."]
-exclude = ["tests", "docs"]
+exclude = ["tests", "docs", "tests", "dist"]
 
 [project.urls]
 Homepage = "https://github.com/VoltaMusic/Volta.py"

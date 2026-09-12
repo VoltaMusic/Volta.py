@@ -258,6 +258,7 @@ class VoltaClient:
         def track(self, track_id: str) -> Any:
             return self.client._delete(f"/api/v1/library/tracks/{track_id}")
 
+    # -- Sous-espaces de l'API liés à VoltaClient -----------------------------
 
     class _Library:
         def __init__(self, client: "VoltaClient") -> None:

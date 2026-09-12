@@ -5,7 +5,7 @@ from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
 DEFAULT_TIMEOUT = 20
-TOKEN_REFRESH_MARGIN = 30  # secondes de marge avant l'expiration réelle du token
+TOKEN_REFRESH_MARGIN = 30
 
 
 def _build_session() -> requests.Session:

@@ -10,7 +10,6 @@ class Library:
     def __init__(self, client: "VoltaClient") -> None:
         self.client = client
         self.endpoint = "/api/v1/library"
-
     def tracks(self, search: str = None) -> Any:
         """
         Get all liked tracks.
@@ -30,7 +29,6 @@ class Library:
                         track.append(item)
             return track
         return result
-
     def albums(self, search: str = None) -> Any:
         """
         Get all liked albums.
@@ -50,7 +48,6 @@ class Library:
                         album.append(item)
             return album
         return result
-
     def artists(self, search: str = None) -> Any:
         """
         Get all liked artists.
@@ -70,7 +67,6 @@ class Library:
                         artist.append(item)
             return artist
         return result
-
     def artist_albums(self, id: str) -> Any:
         """
         Get all albums of a specific artist by their ID.
@@ -79,7 +75,6 @@ class Library:
             id (str): The ID of the artist.
         """
         return self.client._get(f"{self.endpoint}/artists/{id}/albums")
-
     def artist_tracks(self, id: str) -> Any:
         """
         Get all tracks of a specific artist by their ID.
@@ -88,7 +83,6 @@ class Library:
             id (str): The ID of the artist.
         """
         return self.client._get(f"{self.endpoint}/artists/{id}/tracks")
-
     def playlists(self, search: str = None, id: str = None) -> Any:
         """
         Get all liked playlists or a specific playlist by ID.

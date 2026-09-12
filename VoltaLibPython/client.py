@@ -51,8 +51,6 @@ class VoltaClient:
 
         self._start_background_refresh()
 
-        # Sous-espaces de l'API, liés à cette instance (pas de nouveau
-        # VoltaClient créé à chaque accès).
         self.get = Get(self)
         self.post = Post(self)
         self.put = Put(self)

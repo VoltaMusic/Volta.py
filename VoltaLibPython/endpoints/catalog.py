@@ -10,7 +10,6 @@ class Catalog:
     def __init__(self, client: "VoltaClient") -> None:
         self.client = client
         self.endpoint = "/api/v1"
-
     def search(self, query: str) -> Any:
         """
         Search for tracks, albums, artists, and playlists globally.
@@ -19,7 +18,6 @@ class Catalog:
             query (str): The search query string.
         """
         return self.client._get(f"{self.endpoint}/search?q={query}")
-
     def artist(self, id: str) -> Any:
         """
         Get details of a specific artist by their ID.
@@ -29,7 +27,6 @@ class Catalog:
             id (str): The ID of the artist.
         """
         return self.client._get(f"{self.endpoint}/artists/{id}")
-
     def album(self, id: str) -> Any:
         """
         Get details of a specific album by its ID.
@@ -39,7 +36,6 @@ class Catalog:
             id (str): The ID of the album.
         """
         return self.client._get(f"{self.endpoint}/album/{id}")
-
     def track(self, id: str) -> Any:
         """
         Get metadata of a specific track by its ID.
@@ -48,7 +44,6 @@ class Catalog:
             id (str): The ID of the track.
         """
         return self.client._get(f"{self.endpoint}/track/{id}")
-
     def playlist(self, id: str) -> Any:
         """
         Get details of a specific playlist by its ID.
@@ -61,7 +56,6 @@ class Catalog:
         raise NotImplementedError(
             "catalog.playlist() is not implemented yet because the upstream playlist endpoint is currently not working"
         )
-
     def home(self) -> Any:
         """
         Get the home page data, including recommended tracks, albums, artists, and playlists.
@@ -75,7 +69,6 @@ class Catalog:
         Get the current playback state (endpoint: /playback/state).
         """
         return self.client._get(f"{self.endpoint}/playback/state")
-
     def me(self) -> Any:
         """
         Get the current user's profile information, including username, email, and subscription status.

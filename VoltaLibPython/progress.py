@@ -5,7 +5,7 @@ import threading
 import time
 from typing import Optional
 
-SPINNER_MIN_DELAY = 0.3  # secondes avant d'afficher le spinner (évite le clignotement sur les requêtes rapides)
+SPINNER_MIN_DELAY = 0.3
 
 
 class _Spinner:

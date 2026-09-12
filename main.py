@@ -7,6 +7,7 @@ def main():
     with VoltaClient() as client:
         print("Starting test")
         #var = client.get.catalog.playlist("bb7d0e57-bb01-4491-88b6-ce62ee3d75f0")
+        client.get.library.playlists()
         client.delete.track("890441672")
         var = client.get.catalog.me()
         print("Variable was fetched, saving to temp.json")

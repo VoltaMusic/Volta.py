@@ -24,12 +24,20 @@ from VoltaLibPython.client import VoltaClient
 
 
 class FakeResponse:
-    """Imite juste ce que le client utilise d'une `requests.Response`."""
+    """Imite juste ce que le client utilise d'une `requests.Response`.
+
+    `url` reflète l'URL réellement appelée — comme le vrai
+    `requests.Response.url` — et est renseigné par `FakeSession` au moment
+    où la réponse est renvoyée (voir plus bas), pas à la construction :
+    au moment où le test crée `FakeResponse(...)`, on ne sait pas encore
+    sur quelle URL elle sera utilisée.
+    """
 
     def __init__(self, status_code: int, json_data: Optional[dict] = None, text: str = ""):
         self.status_code = status_code
         self._json_data = json_data if json_data is not None else {}
         self.text = text or json.dumps(self._json_data)
+        self.url: Optional[str] = None
 
     def json(self) -> Any:
         return self._json_data
@@ -51,26 +59,34 @@ class FakeSession:
         self.calls.append(("GET", url, headers, params))
         if not self.get_responses:
             raise AssertionError(f"Aucune réponse GET simulée en attente pour {url}")
-        return self.get_responses.pop(0)
+        response = self.get_responses.pop(0)
+        response.url = url
+        return response
 
     def post(self, url, headers=None, json=None, data=None, timeout=None):
         payload = json if json is not None else data
         self.calls.append(("POST", url, headers, payload))
         if not self.post_responses:
             raise AssertionError(f"Aucune réponse POST simulée en attente pour {url}")
-        return self.post_responses.pop(0)
+        response = self.post_responses.pop(0)
+        response.url = url
+        return response
 
     def put(self, url, headers=None, json=None, timeout=None):
         self.calls.append(("PUT", url, headers, json))
         if not self.put_responses:
             raise AssertionError(f"Aucune réponse PUT simulée en attente pour {url}")
-        return self.put_responses.pop(0)
+        response = self.put_responses.pop(0)
+        response.url = url
+        return response
 
     def delete(self, url, headers=None, json=None, timeout=None):
         self.calls.append(("DELETE", url, headers, json))
         if not self.delete_responses:
             raise AssertionError(f"Aucune réponse DELETE simulée en attente pour {url}")
-        return self.delete_responses.pop(0)
+        response = self.delete_responses.pop(0)
+        response.url = url
+        return response
 
     def close(self) -> None:
         self.closed = True

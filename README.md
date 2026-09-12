@@ -26,7 +26,7 @@ pip install git+https://github.com/VoltaMusic/Volta.py.git
 ### From binary
 
 ```bash
-pip install dist/VoltaLib-0.7.6-py3-none-any.whl
+pip install dist/VoltaLib-0.8.1-py3-none-any.whl
 ```
 
 ---

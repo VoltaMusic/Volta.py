@@ -243,9 +243,6 @@ class VoltaClient:
     # -- Sous-espaces ---------------------------------------------------
 
     class _GET:
-        """Espace de noms pour les requêtes GET. Utilise le client parent,
-        ne crée jamais de nouvelle instance de VoltaClient."""
-
         def __init__(self, client: "VoltaClient") -> None:
             self.client = client
             self.library = VoltaClient._Library(client)

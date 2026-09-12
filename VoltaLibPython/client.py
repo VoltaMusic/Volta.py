@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import contextlib
 import json
 import logging
 import os
+import sys
 import threading
 import time
 from typing import Any, Optional
@@ -26,7 +28,7 @@ logger = logging.getLogger(__name__)
 
 DEFAULT_TIMEOUT = 20
 TOKEN_REFRESH_MARGIN = 30
-
+SPINNER_MIN_DELAY = 0.3
 
 def _build_session() -> requests.Session:
     session = requests.Session()
@@ -42,16 +44,54 @@ def _build_session() -> requests.Session:
     return session
 
 
+class _Spinner:
+    FRAMES = "⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏"
+
+    def __init__(self, message: str) -> None:
+        self._message = message
+        self._stop_event = threading.Event()
+        self._thread: Optional[threading.Thread] = None
+        self._enabled = sys.stdout.isatty()
+
+    def __enter__(self) -> "_Spinner":
+        if self._enabled:
+            self._stop_event.clear()
+            self._thread = threading.Thread(target=self._spin, daemon=True)
+            self._thread.start()
+        return self
+
+    def __exit__(self, *exc_info: object) -> None:
+        if self._thread is not None:
+            self._stop_event.set()
+            self._thread.join(timeout=1)
+            # Efface la ligne du spinner (si elle a eu le temps de s'afficher).
+            sys.stdout.write("\r" + " " * (len(self._message) + 4) + "\r")
+            sys.stdout.flush()
+
+    def _spin(self) -> None:
+        start = time.monotonic()
+        i = 0
+        while not self._stop_event.is_set():
+            if time.monotonic() - start >= SPINNER_MIN_DELAY:
+                frame = self.FRAMES[i % len(self.FRAMES)]
+                sys.stdout.write(f"\r{frame} {self._message}...")
+                sys.stdout.flush()
+                i += 1
+            time.sleep(0.1)
+
+
 class VoltaClient:
     def __init__(
         self,
         base_url: str = "https://api.volta-music.com",
         token_file: str = "config/token.json",
+        show_progress: bool = True,
     ) -> None:
         self.token_file = token_file
         self.base_url = base_url
         self.client_id = os.getenv("CLIENT_ID")
         self.client_secret = os.getenv("CLIENT_SECRET")
+        self.show_progress = show_progress
 
         self._session = _build_session()
         self._token_lock = threading.Lock()
@@ -155,13 +195,20 @@ class VoltaClient:
             token = self.token
         return {"Authorization": f"Bearer {token}"}
 
+    def _progress(self, message: str):
+        """Contexte à utiliser autour de l'appel réseau : affiche un
+        spinner si `show_progress` est activé, sinon ne fait rien."""
+        if not self.show_progress:
+            return contextlib.nullcontext()
+        return _Spinner(message)
+
     # -- Rafraîchissement suite à un 401 ------------------------------------
 
     def _handle_response(self, response: requests.Response) -> Any:
         """
         Analyse la réponse HTTP et lève l'exception spécifique adaptée.
         """
-        if 200 <= response.status_code < 300:
+        if response.status_code == 200:
             try:
                 return response.json()
             except ValueError:
@@ -198,9 +245,10 @@ class VoltaClient:
         self, endpoint: str, params: Optional[dict[str, Any]] = None, _retry: bool = True
     ) -> Any:
         url = f"{self.base_url}{endpoint}"
-        response = self._session.get(
-            url, headers=self._auth_headers(), params=params, timeout=DEFAULT_TIMEOUT
-        )
+        with self._progress(f"GET {endpoint}"):
+            response = self._session.get(
+                url, headers=self._auth_headers(), params=params, timeout=DEFAULT_TIMEOUT
+            )
         if response.status_code == 401 and _retry:
             self._handle_unauthorized()
             return self._get(endpoint, params, _retry=False)
@@ -209,9 +257,10 @@ class VoltaClient:
         self, endpoint: str, data: dict[str, Any], _retry: bool = True
     ) -> Any:
         url = f"{self.base_url}{endpoint}"
-        response = self._session.post(
-            url, headers=self._auth_headers(), json=data, timeout=DEFAULT_TIMEOUT
-        )
+        with self._progress(f"POST {endpoint}"):
+            response = self._session.post(
+                url, headers=self._auth_headers(), json=data, timeout=DEFAULT_TIMEOUT
+            )
         if response.status_code == 401 and _retry:
             self._handle_unauthorized()
             return self._post(endpoint, data, _retry=False)
@@ -220,9 +269,10 @@ class VoltaClient:
         self, endpoint: str, data: dict[str, Any], _retry: bool = True
     ) -> Any:
         url = f"{self.base_url}{endpoint}"
-        response = self._session.put(
-            url, headers=self._auth_headers(), json=data, timeout=DEFAULT_TIMEOUT
-        )
+        with self._progress(f"PUT {endpoint}"):
+            response = self._session.put(
+                url, headers=self._auth_headers(), json=data, timeout=DEFAULT_TIMEOUT
+            )
         if response.status_code == 401 and _retry:
             self._handle_unauthorized()
             return self._put(endpoint, data, _retry=False)
@@ -231,9 +281,10 @@ class VoltaClient:
         self, endpoint: str, data: Optional[dict[str, Any]] = None, _retry: bool = True,
     ) -> Any:
         url = f"{self.base_url}{endpoint}"
-        response = self._session.delete(
-            url, headers=self._auth_headers(), json=data, timeout=DEFAULT_TIMEOUT
-        )
+        with self._progress(f"DELETE {endpoint}"):
+            response = self._session.delete(
+                url, headers=self._auth_headers(), json=data, timeout=DEFAULT_TIMEOUT
+            )
         if response.status_code == 401 and _retry:
             self._handle_unauthorized()
             return self._delete(endpoint, data, _retry=False)
@@ -243,6 +294,9 @@ class VoltaClient:
     # -- Sous-espaces ---------------------------------------------------
 
     class _GET:
+        """Espace de noms pour les requêtes GET. Utilise le client parent,
+        ne crée jamais de nouvelle instance de VoltaClient."""
+
         def __init__(self, client: "VoltaClient") -> None:
             self.client = client
             self.library = VoltaClient._Library(client)

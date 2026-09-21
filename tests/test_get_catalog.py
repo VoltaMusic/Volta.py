@@ -269,22 +269,51 @@ class TestCatalogTrack:
 
 
 class TestCatalogPlaylist:
-    def test_playlist_currently_raises_not_implemented_error(self, make_client, fake_session):
+    def test_playlist_success_returns_json(self, make_client, fake_session):
         client = make_client()
-        with pytest.raises(NotImplementedError):
-            client.get.catalog.playlist("pl_123")
+        fake_session.get_responses.append(
+            FakeResponse(200, {"id": "pl_123", "title": "Mes favoris", "tracks": []})
+        )
 
-    def test_playlist_raises_with_expected_message(self, make_client, fake_session):
-        client = make_client()
-        with pytest.raises(NotImplementedError) as exc_info:
-            client.get.catalog.playlist("pl_123")
-        assert str(exc_info.value) == "catalog.playlist() is not implemented yet because the upstream playlist endpoint is currently not working"
+        result = client.get.catalog.playlist("pl_123")
 
-    def test_playlist_currently_never_calls_the_api(self, make_client, fake_session):
+        assert result == {"id": "pl_123", "title": "Mes favoris", "tracks": []}
+
+    def test_playlist_builds_expected_url(self, make_client, fake_session):
         client = make_client()
-        with pytest.raises(NotImplementedError):
-            client.get.catalog.playlist("pl_123")
-        assert fake_session.calls == []
+        fake_session.get_responses.append(FakeResponse(200, {}))
+
+        client.get.catalog.playlist("pl_123")
+
+        method, url, headers, params = fake_session.calls[0]
+        assert method == "GET"
+        assert url.endswith("/api/v1/playlist/pl_123")
+        assert headers["Authorization"] == "Bearer initial_token"
+        assert params is None
+
+    def test_playlist_non_200_raises_api_error(self, make_client, fake_session):
+        client = make_client()
+        fake_session.get_responses.append(FakeResponse(404, text="playlist not found"))
+
+        with pytest.raises(APIError):
+            client.get.catalog.playlist("unknown_id")
+
+    def test_playlist_401_refreshes_token_and_retries_transparently(
+        self, make_client, fake_session
+    ):
+        client = make_client({"access_token": "old_token", "expires_in": 3600})
+
+        fake_session.get_responses.append(FakeResponse(401, text="invalid"))
+        fake_session.post_responses.append(
+            FakeResponse(200, {"access_token": "new_token", "expires_in": 3600})
+        )
+        fake_session.get_responses.append(FakeResponse(200, {"id": "pl_123"}))
+
+        result = client.get.catalog.playlist("pl_123")
+
+        assert result == {"id": "pl_123"}
+        assert client.token == "new_token"
+
 
 
 class TestCatalogHome:

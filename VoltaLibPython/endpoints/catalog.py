@@ -52,10 +52,7 @@ class Catalog:
         Args:
             id (str): The ID of the playlist.
         """
-        # return self.client._get(f"{self.endpoint}/playlist/{id}")
-        raise NotImplementedError(
-            "catalog.playlist() is not implemented yet because the upstream playlist endpoint is currently not working"
-        )
+        return self.client._get(f"{self.endpoint}/playlist/{id}")
     def home(self) -> Any:
         """
         Get the home page data, including recommended tracks, albums, artists, and playlists.

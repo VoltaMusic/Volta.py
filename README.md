@@ -96,6 +96,7 @@ with VoltaClient() as client:
     client.get.catalog.artist("artist_id")   # artist details, top tracks, albums
     client.get.catalog.album("album_id")     # album details + tracks
     client.get.catalog.track("track_id")     # track metadata
+    client.get.catalog.playlist(id)          # detail of a public playlist
 
     client.get.catalog.stream("track_id")    # track info and streaming URL
     client.get.catalog.home()                # home page sections (recommendations)

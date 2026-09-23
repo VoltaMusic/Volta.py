@@ -5,6 +5,7 @@ import time
 from datetime import datetime
 
 from VoltaLibPython import VoltaClient
+from VoltaLibPython.exceptions import VoltaAPIExceptions
 
 RESULTS_DIR = "results"
 LOGS_DIR = "logs"
@@ -179,6 +180,9 @@ def clear():
 if __name__ == "__main__":
     try:
         main()
+    except VoltaAPIExceptions as e:
+        logger.debug("Traceback:", exc_info=True)
+        print(f"\n[ERREUR] {type(e).__name__}: {e}\n")
     except Exception as e:
         print(f"An error occurred: {e}")
         raise

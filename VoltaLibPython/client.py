@@ -11,13 +11,7 @@ from typing import Any, Optional
 import requests
 from dotenv import load_dotenv
 
-from .exceptions import (
-    APIError,
-    AuthenticationError,
-    NotFoundError,
-    RateLimitError,
-    ServerError,
-)
+from .exceptions import ConfigurationError, error_from_response
 from .session import _build_session, DEFAULT_TIMEOUT, TOKEN_REFRESH_MARGIN
 from .progress import _Spinner
 from .endpoints.verbs import Get, Post, Put, Delete
@@ -59,6 +53,12 @@ class VoltaClient:
     # -- Gestion du token -------------------------------------------------
 
     def _refresh_token(self) -> dict[str, Any]:
+        missing = [name for name, value in (("CLIENT_ID", self.client_id), ("CLIENT_SECRET", self.client_secret)) if not value]
+        if missing:
+            raise ConfigurationError(
+                f"{' et '.join(missing)} manquant(s). Ajoute-les dans le fichier .env à la racine du projet "
+                "(ou vérifie qu'une variable d'environnement vide du même nom ne les masque pas)."
+            )
         url = f"{self.base_url}/api/v1/oauth/token"
         payload = {
             "grant_type": "client_credentials",
@@ -67,9 +67,7 @@ class VoltaClient:
         }
         response = self._session.post(url, data=payload, timeout=DEFAULT_TIMEOUT)
         if response.status_code != 200:
-            raise APIError(
-                f"Failed to refresh token: {response.status_code} - {response.text}"
-            )
+            raise error_from_response(response.status_code, response.text, "Échec du rafraîchissement du token")
         token_data = response.json()
         self._save_token(token_data)
         return token_data
@@ -169,18 +167,7 @@ class VoltaClient:
             except ValueError:
                 return response.text
 
-        error_msg = f"API request failed [{response.status_code}] sur {response.url} - {response.text}"
-
-        if response.status_code == 401:
-            raise AuthenticationError(error_msg, status_code=401, response_text=response.text)
-        elif response.status_code == 404:
-            raise NotFoundError(error_msg, status_code=404, response_text=response.text)
-        elif response.status_code == 429:
-            raise RateLimitError(error_msg, status_code=429, response_text=response.text)
-        elif 500 <= response.status_code < 600:
-            raise ServerError(error_msg, status_code=response.status_code, response_text=response.text)
-        else:
-            raise APIError(error_msg, status_code=response.status_code, response_text=response.text)
+        raise error_from_response(response.status_code, response.text, f"Requête vers {response.url} échouée")
 
     def _handle_unauthorized(self) -> None:
         """Force un nouveau jeton suite à un 401 (jeton invalide/expiré côté

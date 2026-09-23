@@ -6,16 +6,25 @@ Legend: `+` added · `~` changed / fixed · `-` removed
 
 ---
 
-## Unreleased
+## Ver 0.9.0 - Sep 23, 2026
 
 ```diff
++ [FEATURE] Readable error messages: "[status] context : reason" followed by the API's detail message instead of raw JSON
++ [FEATURE] APIError.detail: error message extracted from the API response (detail / message / error fields)
++ [FEATURE] New exceptions: BadRequestError (400), ForbiddenError (403), ConfigurationError (missing CLIENT_ID / CLIENT_SECRET)
++ [FEATURE] CLIENT_ID and CLIENT_SECRET checked before requesting a token
++ [FEATURE] main.py prints library errors without a traceback (full traceback kept in the log file)
 + [FEATURE] main.py live test runner: calls every get.catalog and get.library function, logs to logs/ and saves JSON results to results/
 + [FEATURE] main.py helper that finds and calls every public member of an object
 + [TEST] Catalog tests extended to cover the playlist and stream endpoints
 + [ADD] readme field in pyproject.toml (PyPI long description)
 + [DOC] README: catalog.playlist(id) usage for public playlists
-+ [BUILD] dist/ 0.8.3 wheel and tarball
++ [BUILD] dist/ 0.8.3 and 0.9.0 wheel and tarball
 
+~ [CHANGE] Token refresh failures raise typed exceptions (BadRequestError, AuthenticationError...) instead of a generic APIError
+~ [REFACTOR] HTTP status → exception mapping centralised in error_from_response()
+~ [FIX] exceptions.py compatible with Python 3.8+ (postponed annotations)
+~ [DOC] README: error table, install command and known limitations updated
 ~ [FIX] README: parameter usage for playlist retrieval
 ~ [REFACTOR] main.py saves a specific playlist to temp.json
 ~ [CHORE] logs/ and results/ added to .gitignore

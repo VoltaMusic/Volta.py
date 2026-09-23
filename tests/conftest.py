@@ -92,6 +92,17 @@ class FakeSession:
         self.closed = True
 
 
+@pytest.fixture(autouse=True)
+def fake_credentials(monkeypatch):
+    """Fournit de faux CLIENT_ID / CLIENT_SECRET à tous les tests.
+
+    Sans ça, les tests dépendraient du `.env` local : ils passent sur ta
+    machine mais échouent en CI (ConfigurationError avant même que la
+    FakeSession ne réponde)."""
+    monkeypatch.setenv("CLIENT_ID", "test_client_id")
+    monkeypatch.setenv("CLIENT_SECRET", "test_client_secret")
+
+
 @pytest.fixture
 def fake_session() -> FakeSession:
     return FakeSession()

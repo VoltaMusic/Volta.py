@@ -11,7 +11,10 @@ from __future__ import annotations
 
 import json
 
+import pytest
+
 from VoltaLibPython.client import VoltaClient
+from VoltaLibPython.exceptions import ConfigurationError
 
 from .conftest import FakeResponse
 
@@ -54,6 +57,20 @@ class TestTokenLoading:
             assert saved["access_token"] == "brand_new"
         finally:
             client.stop_background_refresh()
+
+    def test_missing_credentials_raise_configuration_error_without_network_call(
+        self, tmp_path, monkeypatch
+    ):
+        from tests.conftest import FakeSession
+
+        session = FakeSession()
+        monkeypatch.setattr("VoltaLibPython.client._build_session", lambda: session)
+        monkeypatch.setenv("CLIENT_SECRET", "")
+
+        with pytest.raises(ConfigurationError, match="CLIENT_SECRET"):
+            VoltaClient(token_file=str(tmp_path / "token.json"))
+        # L'erreur doit être levée avant d'appeler l'API.
+        assert session.calls == []
 
 
 class TestSaveRemainingTime:

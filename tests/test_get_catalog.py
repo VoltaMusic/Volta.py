@@ -32,26 +32,16 @@ class TestCatalogSearch:
 
         _, url, _, params = fake_session.calls[0]
         assert url.endswith("/api/v1/search?q=daft punk")
-        # Le paramètre q est concaténé directement dans l'endpoint plutôt que
-        # passé via `params=`, donc aucun `params` n'est transmis à la session.
         assert params is None
 
     def test_search_query_is_not_url_encoded(self, make_client, fake_session):
-        """Comportement actuel documenté : `query` est inséré tel quel dans
-        l'URL (`f"{endpoint}/search?q={query}"`) sans passer par
-        `urllib.parse.quote` ni par le paramètre `params=` de requests, qui
-        s'en chargerait automatiquement. Une requête contenant des espaces ou
-        des caractères spéciaux (`&`, `#`, `=`, accents...) part donc non
-        encodée. Ça fonctionne pour un mot simple mais peut casser l'appel
-        réel à l'API pour des requêtes plus complexes — à corriger en passant
-        par `params={"q": query}` si besoin."""
         client = make_client()
         fake_session.get_responses.append(FakeResponse(200, {}))
 
         client.get.catalog.search("daft & punk")
 
         _, url, _, _ = fake_session.calls[0]
-        assert url.endswith("/api/v1/search?q=daft & punk")  # espace/& non encodés
+        assert url.endswith("/api/v1/search?q=daft & punk")
 
     def test_search_non_200_raises_api_error(self, make_client, fake_session):
         client = make_client()
@@ -81,25 +71,12 @@ class TestCatalogArtist:
     def test_artist_success_returns_json(self, make_client, fake_session):
         client = make_client()
         fake_session.get_responses.append(
-            FakeResponse(
-                200,
-                {
-                    "id": "artist_1",
-                    "name": "Daft Punk",
-                    "top_tracks": [],
-                    "albums": [],
-                },
-            )
+            FakeResponse(200, {"id": "artist_1", "name": "Daft Punk", "top_tracks": [], "albums": []})
         )
 
         result = client.get.catalog.artist("artist_1")
 
-        assert result == {
-            "id": "artist_1",
-            "name": "Daft Punk",
-            "top_tracks": [],
-            "albums": [],
-        }
+        assert result == {"id": "artist_1", "name": "Daft Punk", "top_tracks": [], "albums": []}
 
     def test_artist_builds_expected_url(self, make_client, fake_session):
         client = make_client()
@@ -114,8 +91,6 @@ class TestCatalogArtist:
         assert params is None
 
     def test_artist_uses_path_segment_not_query_param(self, make_client, fake_session):
-        # Contrairement à search(), l'id est un segment de chemin — pas de
-        # "?" dans l'URL générée.
         client = make_client()
         fake_session.get_responses.append(FakeResponse(200, {}))
 
@@ -269,15 +244,20 @@ class TestCatalogTrack:
 
 
 class TestCatalogPlaylist:
+    """L'endpoint amont est de nouveau fonctionnel : ces tests suivent
+    maintenant exactement le même schéma que TestCatalogAlbum/TestCatalogTrack
+    (succès, URL, 401 avec retry, non-200 qui lève APIError) au lieu de
+    verrouiller le comportement `NotImplementedError` précédent."""
+
     def test_playlist_success_returns_json(self, make_client, fake_session):
         client = make_client()
         fake_session.get_responses.append(
-            FakeResponse(200, {"id": "pl_123", "title": "Mes favoris", "tracks": []})
+            FakeResponse(200, {"id": "pl_123", "name": "Roadtrip 2024", "tracks": []})
         )
 
         result = client.get.catalog.playlist("pl_123")
 
-        assert result == {"id": "pl_123", "title": "Mes favoris", "tracks": []}
+        assert result == {"id": "pl_123", "name": "Roadtrip 2024", "tracks": []}
 
     def test_playlist_builds_expected_url(self, make_client, fake_session):
         client = make_client()
@@ -314,6 +294,88 @@ class TestCatalogPlaylist:
         assert result == {"id": "pl_123"}
         assert client.token == "new_token"
 
+    def test_playlist_401_twice_raises_after_single_retry(self, make_client, fake_session):
+        client = make_client({"access_token": "old_token", "expires_in": 3600})
+
+        fake_session.get_responses.append(FakeResponse(401, text="invalid"))
+        fake_session.post_responses.append(
+            FakeResponse(200, {"access_token": "new_token", "expires_in": 3600})
+        )
+        fake_session.get_responses.append(FakeResponse(401, text="invalid"))
+
+        with pytest.raises(APIError):
+            client.get.catalog.playlist("pl_123")
+
+        get_calls = [c for c in fake_session.calls if c[0] == "GET"]
+        assert len(get_calls) == 2
+
+
+class TestCatalogStream:
+    def test_stream_success_returns_json(self, make_client, fake_session):
+        client = make_client()
+        fake_session.get_responses.append(
+            FakeResponse(
+                200,
+                {
+                    "track_id": "t1",
+                    "stream_url": "/api/v1/stream_relay_ref?ref=volta_relay_ref_xxx",
+                },
+            )
+        )
+
+        result = client.get.catalog.stream("t1")
+
+        assert result == {
+            "track_id": "t1",
+            "stream_url": "/api/v1/stream_relay_ref?ref=volta_relay_ref_xxx",
+        }
+
+    def test_stream_builds_expected_url(self, make_client, fake_session):
+        client = make_client()
+        fake_session.get_responses.append(FakeResponse(200, {}))
+
+        client.get.catalog.stream("t1")
+
+        method, url, headers, params = fake_session.calls[0]
+        assert method == "GET"
+        assert url.endswith("/api/v1/stream?track_id=t1")
+        assert headers["Authorization"] == "Bearer initial_token"
+        assert params is None
+
+    def test_stream_non_200_raises_api_error(self, make_client, fake_session):
+        client = make_client()
+        fake_session.get_responses.append(FakeResponse(404, text="track not found"))
+
+        with pytest.raises(APIError):
+            client.get.catalog.stream("unknown_id")
+
+    def test_stream_401_refreshes_token_and_retries_transparently(
+        self, make_client, fake_session
+    ):
+        client = make_client({"access_token": "old_token", "expires_in": 3600})
+
+        fake_session.get_responses.append(FakeResponse(401, text="invalid"))
+        fake_session.post_responses.append(
+            FakeResponse(200, {"access_token": "new_token", "expires_in": 3600})
+        )
+        fake_session.get_responses.append(FakeResponse(200, {"track_id": "t1"}))
+
+        result = client.get.catalog.stream("t1")
+
+        assert result == {"track_id": "t1"}
+        assert client.token == "new_token"
+
+    def test_stream_different_ids_build_different_urls(self, make_client, fake_session):
+        client = make_client()
+        fake_session.get_responses.append(FakeResponse(200, {"track_id": "t1"}))
+        fake_session.get_responses.append(FakeResponse(200, {"track_id": "t2"}))
+
+        client.get.catalog.stream("t1")
+        client.get.catalog.stream("t2")
+
+        urls = [c[1] for c in fake_session.calls]
+        assert urls[0].endswith("/api/v1/stream?track_id=t1")
+        assert urls[1].endswith("/api/v1/stream?track_id=t2")
 
 
 class TestCatalogHome:

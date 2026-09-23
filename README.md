@@ -26,7 +26,7 @@ pip install git+https://github.com/VoltaMusic/Volta.py.git
 ### From binary
 
 ```bash
-pip install dist/VoltaLib-0.8.1-py3-none-any.whl
+pip install dist/voltalib-0.9.0-py3-none-any.whl
 ```
 
 ---
@@ -136,24 +136,35 @@ Every non-2xx response raises a typed exception (all inherit from `APIError`, wh
 
 | Exception | Raised on |
 |---|---|
+| `BadRequestError` | `400` |
 | `AuthenticationError` | `401` — still invalid after an automatic refresh+retry |
+| `ForbiddenError` | `403` |
 | `NotFoundError` | `404` |
 | `RateLimitError` | `429` |
 | `ServerError` | `500`–`599` |
 | `APIError` | any other non-2xx status code |
 
+`ConfigurationError` (inherits from `VoltaAPIExceptions`, not `APIError`) is raised before any request when `CLIENT_ID` or `CLIENT_SECRET` is missing or empty.
+
+Printing an exception gives a readable message, with the API's own explanation on the second line. It is also available as `e.detail`:
+
+```
+[400] Échec du rafraîchissement du token : Requête invalide
+  -> client_id and client_secret are required
+```
+
 ```python
-from VoltaLibPython.exceptions import APIError, NotFoundError
+from VoltaLibPython.exceptions import APIError, NotFoundError, VoltaAPIExceptions
 
 try:
     client.get.catalog.track("unknown_id")
 except NotFoundError:
     print("That track doesn't exist.")
 except APIError as e:
-    print(f"Something else went wrong: {e.status_code} — {e.response_text}")
+    print(f"Something else went wrong: {e.status_code} — {e.detail}")
 ```
 
-Catching `APIError` alone is enough if you don't need to distinguish error types.
+Catching `APIError` alone is enough if you don't need to distinguish error types. Catch `VoltaAPIExceptions` to also cover `ConfigurationError`.
 
 ---
 
@@ -192,7 +203,6 @@ tests/
 
 ## ⚠️ Known limitations
 
-- `catalog.playlist(id)` raises `NotImplementedError` — the upstream endpoint is currently broken.
 - `catalog.search(query)` inserts `query` directly into the URL (`?q={query}`) rather than through `params=`, so it isn't URL-encoded. Works fine for simple words, may break for queries with `&`, `#`, or other special characters.
 - `library.tracks()/albums()/playlists()` with `search=` silently return an empty list if the API response isn't a list (rather than raising).
 

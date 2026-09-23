@@ -6,6 +6,16 @@ Legend: `+` added · `~` changed / fixed · `-` removed
 
 ---
 
+## Ver 0.9.1 - Sep 23, 2026
+
+```diff
++ [TEST] Missing credentials raise ConfigurationError without any network call
++ [BUILD] dist/ 0.9.1 wheel and tarball
+
+~ [FIX] Tests no longer depend on the local .env: an autouse fixture provides fake CLIENT_ID / CLIENT_SECRET (20 tests failed in CI)
+~ [DOC] README install command points to 0.9.1
+```
+
 ## Ver 0.9.0 - Sep 23, 2026
 
 ```diff

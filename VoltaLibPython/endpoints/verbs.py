@@ -33,10 +33,6 @@ class Post:
     def request(self, endpoint: str, data: dict[str, Any]) -> Any:
         return self.client._post(endpoint, data)
 
-    def track(self, data: dict[str, Any]) -> Any:
-        """Ancien raccourci, gardé pour compatibilité : préférer `post.library.track(track_id)`."""
-        return self.client._post("/api/v1/library/tracks", data)
-
 
 class Put:
     """Espace de noms pour les requêtes PUT."""
@@ -58,7 +54,3 @@ class Delete:
 
     def request(self, endpoint: str, data: Optional[dict[str, Any]] = None) -> Any:
         return self.client._delete(endpoint, data)
-
-    def track(self, track_id: str) -> Any:
-        """Ancien raccourci, gardé pour compatibilité : préférer `delete.library.track(track_id)`."""
-        return self.client._delete(f"/api/v1/library/tracks/{track_id}")

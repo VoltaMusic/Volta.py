@@ -15,7 +15,7 @@ Legend: `+` added · `~` changed / fixed · `-` removed
 + [TEST] Tests for every new POST / PUT / DELETE method
 + [DOC] README: POST / PUT / DELETE sections
 
-~ [CHANGE] client.post.track(data) and client.delete.track(id) kept as compatibility shortcuts
+- [REMOVED] client.post.track(data) and client.delete.track(id): use client.post.library.track(track_id) / client.delete.library.track(track_id)
 ```
 
 ## Ver 0.9.1 - Sep 23, 2026

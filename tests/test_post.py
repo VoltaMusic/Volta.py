@@ -18,7 +18,7 @@ class TestPost:
         client = make_client()
         fake_session.post_responses.append(FakeResponse(200, {"id": "t1"}))
 
-        result = client.post.track({"track_id": "t1"})
+        result = client.post.library.track("t1")
 
         assert result == {"id": "t1"}
         method, url, headers, payload = fake_session.calls[0]
@@ -36,7 +36,7 @@ class TestPost:
         )
         fake_session.post_responses.append(FakeResponse(200, {"id": "t1"}))
 
-        result = client.post.track({"track_id": "t1"})
+        result = client.post.library.track("t1")
 
         assert result == {"id": "t1"}
         assert client.token == "new_token"
@@ -51,7 +51,7 @@ class TestPost:
         fake_session.post_responses.append(FakeResponse(401, text="invalid"))
 
         with pytest.raises(APIError):
-            client.post.track({"track_id": "t1"})
+            client.post.library.track("t1")
 
         post_calls = [c for c in fake_session.calls if c[0] == "POST" and c[1].endswith("/tracks")]
         assert len(post_calls) == 2
@@ -61,7 +61,7 @@ class TestPost:
         fake_session.post_responses.append(FakeResponse(400, text="bad request"))
 
         with pytest.raises(APIError):
-            client.post.track({"track_id": "t1"})
+            client.post.library.track("t1")
 
     def test_post_request_generic_endpoint(self, make_client, fake_session):
         client = make_client()

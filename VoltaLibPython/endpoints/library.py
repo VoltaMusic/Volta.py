@@ -1,11 +1,34 @@
 from __future__ import annotations
 
+import unicodedata
 from typing import Any, TYPE_CHECKING
 
 from ..exceptions import InvalidArgumentError
 
 if TYPE_CHECKING:
     from ..client import VoltaClient
+
+
+def _normalize(text: str) -> str:
+    """Forme de comparaison : insensible à la casse et aux accents
+    ("Beyoncé" et "beyonce" donnent la même chose)."""
+    decomposed = unicodedata.normalize("NFKD", text.casefold())
+    return "".join(c for c in decomposed if not unicodedata.combining(c))
+
+
+def _filter(result: Any, key: str, search: str) -> list[Any]:
+    """Garde les éléments de `result` dont le champ `key` contient `search`.
+
+    Renvoie une liste vide si `result` n'est pas une liste. Les éléments qui
+    ne sont pas des dicts, ou dont le champ est absent / null, sont ignorés.
+    """
+    if not isinstance(result, list):
+        return []
+    query = _normalize(search)
+    return [
+        item for item in result
+        if isinstance(item, dict) and isinstance(item.get(key), str) and query in _normalize(item[key])
+    ]
 
 
 class Library:
@@ -16,58 +39,40 @@ class Library:
         """
         Get all liked tracks.
 
-        If a search string is provided, filter the tracks by title containing the search string (case-insensitive).
+        If a search string is provided, filter the tracks by title containing the search string (case- and accent-insensitive).
 
         Args:
             search (str, optional): A string to filter tracks by title. Defaults to None.
         """
         result = self.client._get(f"{self.endpoint}/tracks")
         if search:
-            track = []
-            if isinstance(result, list):
-                query_lower = search.lower()
-                for item in result:
-                    if isinstance(item, dict) and query_lower in item.get("title", "").lower():
-                        track.append(item)
-            return track
+            return _filter(result, "title", search)
         return result
     def albums(self, search: str = None) -> Any:
         """
         Get all liked albums.
 
-        If a search string is provided, filter the albums by title containing the search string (case-insensitive).
+        If a search string is provided, filter the albums by title containing the search string (case- and accent-insensitive).
 
         Args:
             search (str, optional): A string to filter albums by title. Defaults to None.
         """
         result = self.client._get(f"{self.endpoint}/albums")
         if search:
-            album = []
-            if isinstance(result, list):
-                query_lower = search.lower()
-                for item in result:
-                    if isinstance(item, dict) and query_lower in item.get("title", "").lower():
-                        album.append(item)
-            return album
+            return _filter(result, "title", search)
         return result
     def artists(self, search: str = None) -> Any:
         """
         Get all liked artists.
 
-        If a search string is provided, filter the artists by name containing the search string (case-insensitive).
+        If a search string is provided, filter the artists by name containing the search string (case- and accent-insensitive).
 
         Args:
             search (str, optional): A string to filter artists by name. Defaults to None.
         """
         result = self.client._get(f"{self.endpoint}/artists")
         if search:
-            artist = []
-            if isinstance(result, list):
-                query_lower = search.lower()
-                for item in result:
-                    if isinstance(item, dict) and query_lower in item.get("name", "").lower():
-                        artist.append(item)
-            return artist
+            return _filter(result, "name", search)
         return result
     def artist_albums(self, id: str) -> Any:
         """
@@ -89,7 +94,7 @@ class Library:
         """
         Get all liked playlists or a specific playlist by ID.
 
-        If a search string is provided, filter the playlists by name containing the search string (case-insensitive).
+        If a search string is provided, filter the playlists by name containing the search string (case- and accent-insensitive).
         If both search and id are provided, an InvalidArgumentError will be raised.
 
         Args:
@@ -104,11 +109,5 @@ class Library:
             return self.client._get(f"{self.endpoint}/playlists/{id}")
         result = self.client._get(f"{self.endpoint}/playlists")
         if search:
-            playlist = []
-            if isinstance(result, list):
-                query_lower = search.lower()
-                for item in result:
-                    if isinstance(item, dict) and query_lower in item.get("name", "").lower():
-                        playlist.append(item)
-            return playlist
+            return _filter(result, "name", search)
         return result

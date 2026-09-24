@@ -274,3 +274,49 @@ class TestLibraryPlaylists:
         result = client.get.library.playlists(search=None, id="pl_123")
 
         assert result == {"id": "pl_123"}
+
+# ---------------------------------------------------------------------------
+# Filtrage `search=` commun
+# ---------------------------------------------------------------------------
+
+class TestSearchFilter:
+    @pytest.mark.parametrize(
+        "method, key",
+        [("tracks", "title"), ("albums", "title"), ("artists", "name"), ("playlists", "name")],
+    )
+    def test_search_is_accent_insensitive(self, make_client, fake_session, method, key):
+        client = make_client()
+        fake_session.get_responses.append(
+            FakeResponse(200, [{"id": "1", key: "Beyoncé"}, {"id": "2", key: "Björk"}])
+        )
+
+        result = getattr(client.get.library, method)(search="beyonce")
+
+        assert [item["id"] for item in result] == ["1"]
+
+    def test_accented_query_matches_unaccented_title(self, make_client, fake_session):
+        client = make_client()
+        fake_session.get_responses.append(FakeResponse(200, [{"id": "t1", "title": "Cafe del Mar"}]))
+
+        result = client.get.library.tracks(search="Café")
+
+        assert [t["id"] for t in result] == ["t1"]
+
+    def test_null_or_missing_field_is_ignored(self, make_client, fake_session):
+        # Avant : un titre `null` faisait planter la recherche (None.lower()).
+        client = make_client()
+        fake_session.get_responses.append(
+            FakeResponse(200, [{"id": "t1", "title": None}, {"id": "t2"}, {"id": "t3", "title": "Discovery"}])
+        )
+
+        result = client.get.library.tracks(search="disco")
+
+        assert [t["id"] for t in result] == ["t3"]
+
+    def test_casefold_handles_special_cases(self, make_client, fake_session):
+        client = make_client()
+        fake_session.get_responses.append(FakeResponse(200, [{"id": "a1", "name": "STRASSE"}]))
+
+        result = client.get.library.artists(search="straße")
+
+        assert [a["id"] for a in result] == ["a1"]

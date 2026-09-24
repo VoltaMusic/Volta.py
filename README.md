@@ -27,7 +27,7 @@ pip install git+https://github.com/VoltaMusic/Volta.py.git
 
 ```bash
 python -m build
-pip install dist/voltalib-1.1.0-py3-none-any.whl
+pip install dist/voltalib-1.1.1-py3-none-any.whl
 ```
 
 ---
@@ -70,7 +70,7 @@ If you don't use a context manager, call `client.stop_background_refresh()` your
 ```python
 with VoltaClient() as client:
     client.get.library.tracks()                    # all liked tracks
-    client.get.library.tracks(search="daft punk")   # filtered by title (case-insensitive)
+    client.get.library.tracks(search="daft punk")   # filtered by title (case- and accent-insensitive)
 
     client.get.library.albums()
     client.get.library.albums(search="discovery")

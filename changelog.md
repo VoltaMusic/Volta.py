@@ -6,6 +6,16 @@ Legend: `+` added · `~` changed / fixed · `-` removed
 
 ---
 
+## Unreleased
+
+```diff
++ [CI] Tests and lint run on Python 3.10, 3.11, 3.12 and 3.13 (matrix, fail-fast disabled) instead of 3.10 only
++ [BUILD] PyPI classifiers list the supported Python versions (3.10 to 3.13)
+
+~ [CHANGE] requires-python raised from >=3.8 to >=3.10: the pinned dependencies (python-dotenv 1.2.3) need 3.10+ and the build backend (setuptools>=77) no longer installs on 3.8
+~ [CI] actions/setup-python upgraded from v3 to v5
+```
+
 ## Ver 1.3.0 - Sep 24, 2026
 
 ```diff

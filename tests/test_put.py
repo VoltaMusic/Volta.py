@@ -83,3 +83,42 @@ class TestPut:
 
         _, _, _, payload = fake_session.calls[0]
         assert payload == {"order": ["t1", "t2", "t3"]}
+
+class TestPutLibrary:
+    def test_playlist_sends_only_given_fields(self, make_client, fake_session):
+        client = make_client()
+        fake_session.put_responses.append(FakeResponse(200, {"updated": True}))
+
+        client.put.library.playlist("pl1", name="Roadtrip 2024")
+
+        method, url, _, payload = fake_session.calls[0]
+        assert method == "PUT"
+        assert url.endswith("/api/v1/library/playlists/pl1")
+        assert payload == {"name": "Roadtrip 2024"}
+
+    def test_playlist_visibility_false_is_sent(self, make_client, fake_session):
+        client = make_client()
+        fake_session.put_responses.append(FakeResponse(200, {"updated": True}))
+
+        client.put.library.playlist("pl1", is_public=False)
+
+        _, _, _, payload = fake_session.calls[0]
+        assert payload == {"is_public": False}
+
+    def test_playlist_without_fields_raises_before_request(self, make_client, fake_session):
+        client = make_client()
+
+        with pytest.raises(ValueError):
+            client.put.library.playlist("pl1")
+
+        assert fake_session.calls == []
+
+    def test_reorder_sends_track_ids(self, make_client, fake_session):
+        client = make_client()
+        fake_session.put_responses.append(FakeResponse(200, {"ok": True}))
+
+        client.put.library.reorder("pl1", ("t3", "t1", "t2"))
+
+        _, url, _, payload = fake_session.calls[0]
+        assert url.endswith("/api/v1/library/playlists/pl1/tracks/reorder")
+        assert payload == {"track_ids": ["t3", "t1", "t2"]}

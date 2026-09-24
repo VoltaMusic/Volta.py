@@ -23,10 +23,11 @@ A lightweight Python client for the [Volta Music](https://volta-music.com) publi
 pip install git+https://github.com/VoltaMusic/Volta.py.git
 ```
 
-### From binary
+### From a local build
 
 ```bash
-pip install dist/voltalib-1.0.0-py3-none-any.whl
+python -m build
+pip install dist/voltalib-1.0.1-py3-none-any.whl
 ```
 
 ---

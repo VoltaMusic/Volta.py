@@ -6,6 +6,16 @@ Legend: `+` added · `~` changed / fixed · `-` removed
 
 ---
 
+## Ver 1.1.1 - Sep 24, 2026
+
+```diff
++ [FEATURE] library search= is now accent-insensitive ("beyonce" finds "Beyoncé") and uses casefold() ("straße" finds "STRASSE")
++ [TEST] Shared search filter tests (accents, null fields, casefold)
+
+~ [FIX] library search= no longer crashes when an item's title / name is null
+~ [REFACTOR] tracks / albums / artists / playlists share a single _filter() helper instead of four copies
+```
+
 ## Ver 1.1.0 - Sep 24, 2026
 
 ```diff

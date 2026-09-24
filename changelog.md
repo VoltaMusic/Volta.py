@@ -6,6 +6,21 @@ Legend: `+` added · `~` changed / fixed · `-` removed
 
 ---
 
+## Ver 1.1.3 - Sep 24, 2026
+
+```diff
++ [BUILD] License declared as an SPDX expression (license = "MIT", license-files = ["LICENSE"]): removes the setuptools deprecation warning, builds would have stopped working on 2027-02-18
++ [BUILD] py.typed marker: type checkers (mypy, Pylance) now use the library's type hints
++ [BUILD] PyPI metadata: classifiers, keywords, Repository / Issues / Changelog links
++ [BUILD] Optional dev dependencies: pip install "VoltaLib[dev]" installs pytest and build
+
+~ [FIX] Dependency python-dotenv declared directly instead of the dotenv wrapper package
+~ [BUILD] Minimum versions for dependencies (requests>=2.25, urllib3>=1.26, python-dotenv>=0.19)
+~ [BUILD] Only the VoltaLibPython package is picked up (explicit include instead of an exclude list with duplicates)
+~ [BUILD] build-system requires setuptools>=77.0 only (wheel no longer needed)
+~ [CHORE] requirements.txt pins python-dotenv instead of dotenv
+```
+
 ## Ver 1.1.2 - Sep 24, 2026
 
 ```diff

@@ -1,24 +1,43 @@
-
 [build-system]
-requires = ["setuptools>=61.0", "wheel"]
+requires = ["setuptools>=77.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "VoltaLib"
+version = "1.1.3"
+description = "Python client for the Volta Music public API, with automatic token refresh and typed exceptions"
 readme = "README.md"
-version = "1.1.2"
-description = "VoltaLibPython packaged as VoltaLib"
 requires-python = ">=3.8"
-authors = [ { name = "Zerbaib" } ]
-license = { text = "" }
-dependencies = ["dotenv", "requests"]
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Zerbaib" }]
+keywords = ["volta", "volta-music", "music", "api", "client", "sdk"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Topic :: Multimedia :: Sound/Audio",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Typing :: Typed",
+]
+dependencies = [
+    "python-dotenv>=0.19",
+    "requests>=2.25",
+    "urllib3>=1.26",  # Retry(allowed_methods=...) dans session.py
+]
 
-[tool.setuptools]
-include-package-data = true
-
-[tool.setuptools.packages.find]
-where = ["."]
-exclude = ["tests", "docs", "tests", "dist"]
+[project.optional-dependencies]
+dev = ["pytest>=7", "build"]
 
 [project.urls]
 Homepage = "https://github.com/VoltaMusic/Volta.py"
+Repository = "https://github.com/VoltaMusic/Volta.py"
+Issues = "https://github.com/VoltaMusic/Volta.py/issues"
+Changelog = "https://github.com/VoltaMusic/Volta.py/blob/main/changelog.md"
+
+[tool.setuptools.packages.find]
+include = ["VoltaLibPython", "VoltaLibPython.*"]
+
+[tool.setuptools.package-data]
+VoltaLibPython = ["py.typed"]

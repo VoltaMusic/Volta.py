@@ -27,7 +27,7 @@ pip install git+https://github.com/VoltaMusic/Volta.py.git
 
 ```bash
 python -m build
-pip install dist/voltalib-1.1.2-py3-none-any.whl
+pip install dist/voltalib-1.1.3-py3-none-any.whl
 ```
 
 ---

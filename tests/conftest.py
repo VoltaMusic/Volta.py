@@ -54,6 +54,7 @@ class FakeSession:
         self.delete_responses: list[FakeResponse] = []
         self.calls: list[tuple] = []  # (method, url, headers, payload)
         self.closed = False
+        self.mounted: dict = {}
 
     def get(self, url, headers=None, params=None, timeout=None):
         self.calls.append(("GET", url, headers, params))
@@ -90,6 +91,9 @@ class FakeSession:
 
     def close(self) -> None:
         self.closed = True
+
+    def mount(self, prefix, adapter) -> None:
+        self.mounted[prefix] = adapter
 
 
 @pytest.fixture(autouse=True)

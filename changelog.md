@@ -6,6 +6,15 @@ Legend: `+` added · `~` changed / fixed · `-` removed
 
 ---
 
+## Ver 1.2.0 - Sep 24, 2026
+
+```diff
++ [TEST] tests/test_session.py covering the retry policy per method and per endpoint
+
+~ [FIX] POST requests are no longer retried automatically on 500 / 502 / 503 / 504: a 5xx can arrive after the server already created the resource, and replaying it created duplicates (e.g. the same playlist 4 times)
+~ [CHANGE] Automatic retries (3 attempts on 5xx) now only apply to GET requests and to the token endpoint, whose POST has no side effect
+```
+
 ## Ver 1.1.3 - Sep 24, 2026
 
 ```diff

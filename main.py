@@ -152,7 +152,7 @@ def run_all_tests():
     log_file = setup_logging()
     logger.info(f"Logs: {log_file} | Results: {RESULTS_DIR}/")
 
-    with VoltaClient() as client:
+    with VoltaClient(show_progress=True) as client:
         summary = {"catalog": test_catalog(client), "library": test_library(client)}
 
     os.makedirs(RESULTS_DIR, exist_ok=True)

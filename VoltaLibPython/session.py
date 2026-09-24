@@ -15,6 +15,10 @@ def _build_session() -> requests.Session:
         backoff_factor=0.5,
         status_forcelist=(500, 502, 503, 504),
         allowed_methods=("GET", "POST"),
+        # Après les retries, renvoyer la dernière réponse 5xx plutôt que
+        # lever une RetryError brute : le client la convertit en ServerError
+        # avec le message de l'API.
+        raise_on_status=False,
     )
     adapter = HTTPAdapter(max_retries=retries)
     session.mount("https://", adapter)

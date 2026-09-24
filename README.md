@@ -27,7 +27,7 @@ pip install git+https://github.com/VoltaMusic/Volta.py.git
 
 ```bash
 python -m build
-pip install dist/voltalib-1.0.1-py3-none-any.whl
+pip install dist/voltalib-1.1.0-py3-none-any.whl
 ```
 
 ---
@@ -183,39 +183,67 @@ client.delete.request("/api/v1/some/other/endpoint")
 
 ## 🚨 Error handling
 
-Every non-2xx response raises a typed exception (all inherit from `APIError`, which itself inherits from `VoltaAPIExceptions`):
-
-| Exception | Raised on |
-|---|---|
-| `BadRequestError` | `400` |
-| `AuthenticationError` | `401` — still invalid after an automatic refresh+retry |
-| `ForbiddenError` | `403` |
-| `NotFoundError` | `404` |
-| `RateLimitError` | `429` |
-| `ServerError` | `500`–`599` |
-| `APIError` | any other non-2xx status code |
-
-`ConfigurationError` (inherits from `VoltaAPIExceptions`, not `APIError`) is raised before any request when `CLIENT_ID` or `CLIENT_SECRET` is missing or empty.
-
-Printing an exception gives a readable message, with the API's own explanation on the second line. It is also available as `e.detail`:
+The library never lets a raw `requests`, `json` or `OSError` exception escape: everything it raises inherits from `VoltaAPIExceptions`.
 
 ```
-[400] Échec du rafraîchissement du token : Requête invalide
-  -> client_id and client_secret are required
+VoltaAPIExceptions
+├── ConfigurationError           CLIENT_ID / CLIENT_SECRET missing or empty
+├── InvalidArgumentError         bad argument, caught before any request (also a ValueError)
+├── TokenStorageError            the token file can't be read or written
+├── NetworkError                 no HTTP response at all
+│   ├── ConnectionFailedError    server unreachable, DNS, connection refused, SSL
+│   └── RequestTimeoutError      no response within the timeout
+├── InvalidResponseError         2xx response that can't be used (not JSON, missing field)
+└── APIError                     the API answered with an error status
+    ├── BadRequestError          400
+    ├── AuthenticationError      401 — still invalid after an automatic refresh+retry
+    ├── ForbiddenError           403 — usually a scope missing on your API key
+    ├── NotFoundError            404
+    ├── ConflictError            409
+    ├── UnprocessableEntityError 422 — request body rejected
+    ├── RateLimitError           429 — see e.retry_after
+    └── ServerError              500–599 (after 3 automatic retries)
+```
+
+Any other non-2xx status raises a plain `APIError`.
+
+Useful attributes:
+
+| Exception | Attributes |
+|---|---|
+| `APIError` and subclasses | `status_code`, `detail` (the API's message), `response_text` |
+| `RateLimitError` | `retry_after` — seconds to wait, from the `Retry-After` header (`None` if absent) |
+| `NetworkError` and subclasses | `url` |
+| `InvalidResponseError` | `response_text` |
+| `TokenStorageError` | `path` |
+
+The original low-level exception is always kept as `e.__cause__`.
+
+Printing an exception gives a readable message, with the details on the next line:
+
+```
+[422] Requête vers https://api.volta-music.com/api/v1/library/playlists échouée : Données envoyées refusées par l'API
+  -> name : field required
 ```
 
 ```python
-from VoltaLibPython.exceptions import APIError, NotFoundError, VoltaAPIExceptions
+from VoltaLibPython.exceptions import (
+    APIError, NetworkError, NotFoundError, RateLimitError, VoltaAPIExceptions,
+)
 
 try:
     client.get.catalog.track("unknown_id")
 except NotFoundError:
     print("That track doesn't exist.")
+except RateLimitError as e:
+    print(f"Slow down, retry in {e.retry_after or 'a few'} seconds.")
+except NetworkError:
+    print("Can't reach Volta right now.")
 except APIError as e:
     print(f"Something else went wrong: {e.status_code} — {e.detail}")
 ```
 
-Catching `APIError` alone is enough if you don't need to distinguish error types. Catch `VoltaAPIExceptions` to also cover `ConfigurationError`.
+Catch `VoltaAPIExceptions` alone to handle every error the library can raise.
 
 ---
 
@@ -247,6 +275,7 @@ tests/
 ├── test_post.py               # library.track / playlist / playlist_track + generic request
 ├── test_put.py                # library.playlist / reorder + generic request
 ├── test_delete.py             # library.track / album / artist / playlist / playlist_track
+├── test_exceptions.py         # every exception: HTTP codes, network, invalid responses, token file, arguments
 └── test_client_lifecycle.py   # token loading/saving, context manager, thread-safety
 ```
 

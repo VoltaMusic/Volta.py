@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from typing import Any, TYPE_CHECKING
 
+from ..exceptions import InvalidArgumentError
+
 if TYPE_CHECKING:
     from ..client import VoltaClient
 
@@ -88,7 +90,7 @@ class Library:
         Get all liked playlists or a specific playlist by ID.
 
         If a search string is provided, filter the playlists by name containing the search string (case-insensitive).
-        If both search and id are provided, a ValueError will be raised.
+        If both search and id are provided, an InvalidArgumentError will be raised.
 
         Args:
             search (str, optional): A string to filter playlists by name. Defaults to None.
@@ -97,7 +99,7 @@ class Library:
                 id is for fetching all data and tracks of a specific playlist, while search is just for finding playlists by name.
         """
         if search is not None and id is not None:
-            raise ValueError("search and id cannot be used at the same time")
+            raise InvalidArgumentError("`search` et `id` ne peuvent pas être utilisés en même temps")
         if id:
             return self.client._get(f"{self.endpoint}/playlists/{id}")
         result = self.client._get(f"{self.endpoint}/playlists")

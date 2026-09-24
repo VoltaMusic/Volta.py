@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from typing import Any, Optional, TYPE_CHECKING
 
+from ..exceptions import InvalidArgumentError
+
 if TYPE_CHECKING:
     from ..client import VoltaClient
 
@@ -41,7 +43,7 @@ class LibraryPost:
             is_public (bool, optional): Whether the playlist is public. Defaults to None (server default).
         """
         if not name:
-            raise ValueError("name is required to create a playlist")
+            raise InvalidArgumentError("`name` est obligatoire pour créer une playlist")
         return self.client._post(f"{self.endpoint}/playlists", _playlist_fields(name, description, is_public))
     def playlist_track(self, playlist_id: str, track_id: str) -> Any:
         """
@@ -71,7 +73,7 @@ class LibraryPut:
         Update the name, description and/or visibility of a playlist.
 
         Only the fields you pass are sent; the others are left unchanged.
-        Raises a ValueError if no field is given.
+        Raises an InvalidArgumentError if no field is given.
 
         Scope: playlists:write
 
@@ -83,7 +85,7 @@ class LibraryPut:
         """
         fields = _playlist_fields(name, description, is_public)
         if not fields:
-            raise ValueError("at least one of name, description or is_public must be given")
+            raise InvalidArgumentError("indique au moins un champ à modifier : `name`, `description` ou `is_public`")
         return self.client._put(f"{self.endpoint}/playlists/{playlist_id}", fields)
     def reorder(self, playlist_id: str, track_ids: list[str]) -> Any:
         """

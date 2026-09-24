@@ -11,7 +11,15 @@ from typing import Any, Optional
 import requests
 from dotenv import load_dotenv
 
-from .exceptions import ConfigurationError, error_from_response
+from .exceptions import (
+    ConfigurationError,
+    ConnectionFailedError,
+    InvalidResponseError,
+    NetworkError,
+    RequestTimeoutError,
+    TokenStorageError,
+    error_from_response,
+)
 from .session import _build_session, DEFAULT_TIMEOUT, TOKEN_REFRESH_MARGIN
 from .progress import _Spinner
 from .endpoints.verbs import Get, Post, Put, Delete
@@ -65,24 +73,55 @@ class VoltaClient:
             "client_id": self.client_id,
             "client_secret": self.client_secret,
         }
-        response = self._session.post(url, data=payload, timeout=DEFAULT_TIMEOUT)
+        response = self._send(self._session.post, url, data=payload, timeout=DEFAULT_TIMEOUT)
         if response.status_code != 200:
-            raise error_from_response(response.status_code, response.text, "Échec du rafraîchissement du token")
-        token_data = response.json()
+            raise error_from_response(
+                response.status_code, response.text, "Échec du rafraîchissement du token",
+                headers=getattr(response, "headers", None),
+            )
+        try:
+            token_data = response.json()
+        except ValueError as e:
+            raise InvalidResponseError(
+                "Échec du rafraîchissement du token : la réponse de l'API n'est pas du JSON",
+                response_text=response.text,
+            ) from e
+        if not _is_valid_token_data(token_data):
+            raise InvalidResponseError(
+                "Échec du rafraîchissement du token : `access_token` ou `expires_in` absent ou invalide",
+                response_text=response.text,
+            )
         self._save_token(token_data)
         return token_data
 
     def _save_token(self, token_data: dict[str, Any]) -> None:
-        directory = os.path.dirname(self.token_file)
-        if directory:
-            os.makedirs(directory, exist_ok=True)
-        with open(self.token_file, "w") as f:
-            json.dump(token_data, f, indent=4)
+        try:
+            directory = os.path.dirname(self.token_file)
+            if directory:
+                os.makedirs(directory, exist_ok=True)
+            with open(self.token_file, "w") as f:
+                json.dump(token_data, f, indent=4)
+        except OSError as e:
+            raise TokenStorageError(
+                f"Impossible d'écrire le fichier de token ({e.strerror or e})", path=self.token_file
+            ) from e
 
     def _load_token(self) -> dict[str, Any]:
         if os.path.exists(self.token_file):
-            with open(self.token_file, "r") as f:
-                return json.load(f)
+            try:
+                with open(self.token_file, "r") as f:
+                    token_data = json.load(f)
+            except OSError as e:
+                raise TokenStorageError(
+                    f"Impossible de lire le fichier de token ({e.strerror or e})", path=self.token_file
+                ) from e
+            except ValueError:
+                token_data = None
+            if _is_valid_token_data(token_data):
+                return token_data
+            # Fichier corrompu ou incomplet : pas une raison de planter, on
+            # redemande simplement un jeton (qui réécrira le fichier).
+            logger.warning("Fichier de token invalide (%s), un nouveau jeton va être demandé.", self.token_file)
         return self._refresh_token()
 
     def _start_background_refresh(self) -> None:
@@ -167,7 +206,10 @@ class VoltaClient:
             except ValueError:
                 return response.text
 
-        raise error_from_response(response.status_code, response.text, f"Requête vers {response.url} échouée")
+        raise error_from_response(
+            response.status_code, response.text, f"Requête vers {response.url} échouée",
+            headers=getattr(response, "headers", None),
+        )
 
     def _handle_unauthorized(self) -> None:
         """Force un nouveau jeton suite à un 401 (jeton invalide/expiré côté
@@ -184,54 +226,65 @@ class VoltaClient:
 
     # -- Requêtes de base ---------------------------------------------------
 
-    def _get(
-        self, endpoint: str, params: Optional[dict[str, Any]] = None, _retry: bool = True
+    @staticmethod
+    def _send(send, url: str, **kwargs: Any) -> requests.Response:
+        """Appelle `send` (une méthode de la session) et convertit les
+        erreurs réseau de `requests` en exceptions de la lib."""
+        try:
+            return send(url, **kwargs)
+        except requests.exceptions.Timeout as e:
+            raise RequestTimeoutError(
+                f"Pas de réponse de l'API après {kwargs.get('timeout', DEFAULT_TIMEOUT)} s", url=url
+            ) from e
+        except requests.exceptions.ConnectionError as e:
+            raise ConnectionFailedError(
+                "Impossible de joindre l'API (serveur injoignable, pas de connexion ou erreur SSL)", url=url
+            ) from e
+        except requests.exceptions.RequestException as e:
+            raise NetworkError(f"La requête n'a pas pu aboutir ({type(e).__name__})", url=url) from e
+
+    def _request(
+        self,
+        method: str,
+        endpoint: str,
+        params: Optional[dict[str, Any]] = None,
+        data: Optional[dict[str, Any]] = None,
+        _retry: bool = True,
     ) -> Any:
         url = f"{self.base_url}{endpoint}"
-        with self._progress(f"GET {endpoint}"):
-            response = self._session.get(
-                url, headers=self._auth_headers(), params=params, timeout=DEFAULT_TIMEOUT
-            )
+        send = getattr(self._session, method.lower())
+        kwargs: dict[str, Any] = {"headers": self._auth_headers(), "timeout": DEFAULT_TIMEOUT}
+        if method == "GET":
+            kwargs["params"] = params
+        else:
+            kwargs["json"] = data
+        with self._progress(f"{method} {endpoint}"):
+            response = self._send(send, url, **kwargs)
         if response.status_code == 401 and _retry:
             self._handle_unauthorized()
-            return self._get(endpoint, params, _retry=False)
+            return self._request(method, endpoint, params, data, _retry=False)
         return self._handle_response(response)
 
-    def _post(
-        self, endpoint: str, data: dict[str, Any], _retry: bool = True
-    ) -> Any:
-        url = f"{self.base_url}{endpoint}"
-        with self._progress(f"POST {endpoint}"):
-            response = self._session.post(
-                url, headers=self._auth_headers(), json=data, timeout=DEFAULT_TIMEOUT
-            )
-        if response.status_code == 401 and _retry:
-            self._handle_unauthorized()
-            return self._post(endpoint, data, _retry=False)
-        return self._handle_response(response)
+    def _get(self, endpoint: str, params: Optional[dict[str, Any]] = None) -> Any:
+        return self._request("GET", endpoint, params=params)
 
-    def _put(
-        self, endpoint: str, data: dict[str, Any], _retry: bool = True
-    ) -> Any:
-        url = f"{self.base_url}{endpoint}"
-        with self._progress(f"PUT {endpoint}"):
-            response = self._session.put(
-                url, headers=self._auth_headers(), json=data, timeout=DEFAULT_TIMEOUT
-            )
-        if response.status_code == 401 and _retry:
-            self._handle_unauthorized()
-            return self._put(endpoint, data, _retry=False)
-        return self._handle_response(response)
+    def _post(self, endpoint: str, data: dict[str, Any]) -> Any:
+        return self._request("POST", endpoint, data=data)
 
-    def _delete(
-        self, endpoint: str, data: Optional[dict[str, Any]] = None, _retry: bool = True,
-    ) -> Any:
-        url = f"{self.base_url}{endpoint}"
-        with self._progress(f"DELETE {endpoint}"):
-            response = self._session.delete(
-                url, headers=self._auth_headers(), json=data, timeout=DEFAULT_TIMEOUT
-            )
-        if response.status_code == 401 and _retry:
-            self._handle_unauthorized()
-            return self._delete(endpoint, data, _retry=False)
-        return self._handle_response(response)
+    def _put(self, endpoint: str, data: dict[str, Any]) -> Any:
+        return self._request("PUT", endpoint, data=data)
+
+    def _delete(self, endpoint: str, data: Optional[dict[str, Any]] = None) -> Any:
+        return self._request("DELETE", endpoint, data=data)
+
+
+def _is_valid_token_data(token_data: Any) -> bool:
+    """Un jeton exploitable : un dict avec un `access_token` non vide et un
+    `expires_in` convertible en entier (s'il est présent)."""
+    if not isinstance(token_data, dict) or not token_data.get("access_token"):
+        return False
+    try:
+        int(token_data.get("expires_in", 3600))
+    except (TypeError, ValueError):
+        return False
+    return True

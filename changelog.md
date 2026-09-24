@@ -6,6 +6,25 @@ Legend: `+` added · `~` changed / fixed · `-` removed
 
 ---
 
+## Ver 1.1.0 - Sep 24, 2026
+
+```diff
++ [FEATURE] Every error the library can hit is now a VoltaAPIExceptions subclass: no raw requests / json / OSError exception escapes anymore
++ [FEATURE] NetworkError, with ConnectionFailedError (unreachable, DNS, SSL) and RequestTimeoutError, instead of raw requests exceptions
++ [FEATURE] InvalidResponseError when the token endpoint answers 2xx with non-JSON or without access_token / expires_in
++ [FEATURE] TokenStorageError when the token file can't be read or written
++ [FEATURE] InvalidArgumentError (also a ValueError) for bad arguments caught before any request
++ [FEATURE] ConflictError (409) and UnprocessableEntityError (422)
++ [FEATURE] RateLimitError.retry_after, read from the Retry-After header
++ [TEST] tests/test_exceptions.py covering every exception
++ [DOC] README: full exception hierarchy and attributes
+
+~ [FIX] A 5xx that persists after the automatic retries raises ServerError with the API's message instead of a raw requests RetryError
+~ [FIX] A corrupted or incomplete token file no longer crashes the client: a new token is requested
+~ [CHANGE] 422 validation details are shown as "field : message" instead of a raw Python list
+~ [REFACTOR] GET / POST / PUT / DELETE share a single _request() method
+```
+
 ## Ver 1.0.1 - Sep 24, 2026
 
 ```diff

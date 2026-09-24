@@ -26,7 +26,7 @@ pip install git+https://github.com/VoltaMusic/Volta.py.git
 ### From binary
 
 ```bash
-pip install dist/voltalib-0.9.1-py3-none-any.whl
+pip install dist/voltalib-1.0.0-py3-none-any.whl
 ```
 
 ---
@@ -114,19 +114,69 @@ client.get.request("/api/v1/some/other/endpoint")
 
 ### 🟡 POST
 
-__*Not implemented for now*__
+#### Library & playlists (`client.post.library`)
+
+```python
+with VoltaClient() as client:
+    client.post.library.track("track_id")                  # like a track (library:write)
+
+    client.post.library.playlist("Roadtrip")               # create a playlist (playlists:write)
+    client.post.library.playlist("Roadtrip", description="Summer 2026", is_public=False)
+
+    client.post.library.playlist_track("playlist_id", "track_id")  # add a track to a playlist
+```
+
+#### Generic POST
+
+```python
+client.post.request("/api/v1/some/other/endpoint", {"key": "value"})
+```
 
 ---
 
 ### 🟠 PUT
 
-__*Not implemented for now*__
+#### Library & playlists (`client.put.library`)
+
+```python
+with VoltaClient() as client:
+    # Only the fields you pass are sent — the others are left unchanged.
+    client.put.library.playlist("playlist_id", name="Roadtrip 2026")
+    client.put.library.playlist("playlist_id", description="New description", is_public=True)
+
+    # New order of the playlist's tracks
+    client.put.library.reorder("playlist_id", ["track_3", "track_1", "track_2"])
+```
+
+> ⚠️ `put.library.playlist()` with no field to update raises a `ValueError` (no request is sent).
+
+#### Generic PUT
+
+```python
+client.put.request("/api/v1/some/other/endpoint", {"key": "value"})
+```
 
 ---
 
 ### 🔴 DELETE
 
-__*Not implemented for now*__
+#### Library & playlists (`client.delete.library`)
+
+```python
+with VoltaClient() as client:
+    client.delete.library.track("track_id")        # unlike a track (library:write)
+    client.delete.library.album("album_id")        # remove every track of an album from your library
+    client.delete.library.artist("artist_id")      # unfollow an artist
+
+    client.delete.library.playlist("playlist_id")                    # delete a playlist (playlists:write)
+    client.delete.library.playlist_track("playlist_id", "track_id")  # remove a track from a playlist
+```
+
+#### Generic DELETE
+
+```python
+client.delete.request("/api/v1/some/other/endpoint")
+```
 
 ---
 
@@ -193,9 +243,9 @@ tests/
 ├── conftest.py                # shared fixtures (fake HTTP session, client factory)
 ├── test_get_library.py        # tracks / albums / artists / artist_albums / artist_tracks / playlists
 ├── test_get_catalog.py        # search / artist / album / track / playlist / home / state / me
-├── test_post.py
-├── test_put.py
-├── test_delete.py
+├── test_post.py               # library.track / playlist / playlist_track + generic request
+├── test_put.py                # library.playlist / reorder + generic request
+├── test_delete.py             # library.track / album / artist / playlist / playlist_track
 └── test_client_lifecycle.py   # token loading/saving, context manager, thread-safety
 ```
 

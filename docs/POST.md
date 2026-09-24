@@ -28,15 +28,21 @@ VoltaClient.post.library.
 ### track()
 > Add a track to your library (like it).
 >
+> The API needs the track's name, artist and album, not just its ID: pass the **whole track**,
+> as returned by `get.catalog.track()`, `get.catalog.search()` or `get.library.tracks()`.
+> Both shapes are converted automatically. Passing only an ID, or a track without a name / artist / album,
+> raises an `InvalidArgumentError` (before any request is sent).
+>
 > Args:
-> - track_id (str): The ID of the track.
+> - track (dict): The track to add.
 >
 > Scope: `library:write`
 
 #### Use:
 ```python
 with VoltaClient() as client:
-    client.post.library.track("Track ID") # Like a track
+    track = client.get.catalog.track("Track ID")
+    client.post.library.track(track) # Like a track
 ```
 
 
@@ -46,6 +52,9 @@ with VoltaClient() as client:
 >
 > Only the fields you pass are sent; the others keep the server's defaults.
 > An empty `name` raises an `InvalidArgumentError` (before any request is sent).
+>
+> The API ignores `description` on creation, so the library sets it right after with a PUT:
+> the returned playlist has its description either way.
 >
 > Args:
 > - name (str): The name of the playlist.
@@ -66,16 +75,22 @@ with VoltaClient() as client:
 ### playlist_track()
 > Add a track to one of your playlists.
 >
+> Like [`track()`](#track), it needs the **whole track** (from `get.library.tracks()`,
+> `get.catalog.track()` or `get.catalog.search()`), not just its ID.
+>
 > Args:
 > - playlist_id (str): The ID of the playlist.
-> - track_id (str): The ID of the track to add.
+> - track (dict): The track to add.
 >
 > Scope: `playlists:write`
 
 #### Use:
 ```python
 with VoltaClient() as client:
-    client.post.library.playlist_track("Playlist ID", "Track ID") # Add a track to a playlist
+    playlist = client.post.library.playlist("Daft Punk mix")
+    for track in client.get.library.tracks():
+        if "daft punk" in track["artist"].lower():
+            client.post.library.playlist_track(playlist["id"], track)
 ```
 
 

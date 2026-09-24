@@ -128,13 +128,16 @@ client.get.request("/api/v1/some/other/endpoint")
 
 ```python
 with VoltaClient() as client:
-    client.post.library.track("track_id")                  # like a track (library:write)
+    track = client.get.catalog.track("track_id")           # or any track from get.library.tracks() / search()
+    client.post.library.track(track)                       # like a track (library:write)
 
-    client.post.library.playlist("Roadtrip")               # create a playlist (playlists:write)
+    playlist = client.post.library.playlist("Roadtrip")    # create a playlist (playlists:write)
     client.post.library.playlist("Roadtrip", description="Summer 2026", is_public=False)
 
-    client.post.library.playlist_track("playlist_id", "track_id")  # add a track to a playlist
+    client.post.library.playlist_track(playlist["id"], track)  # add a track to a playlist
 ```
+
+> ⚠️ Adding a track needs the **whole track** (the dict returned by `get.library.tracks()`, `get.catalog.track()` or `search()`), not just its ID: the API also requires its name, artist and album. Passing only an ID raises an `InvalidArgumentError`.
 
 #### Generic POST
 

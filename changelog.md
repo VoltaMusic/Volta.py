@@ -6,6 +6,17 @@ Legend: `+` added · `~` changed / fixed · `-` removed
 
 ---
 
+## Unreleased
+
+```diff
++ [TEST] Track payload tests built from the real API shapes (library and catalog tracks)
+
+~ [FIX] post.library.track() and post.library.playlist_track() now send the track object the API requires (id, name, artist, album, plus artist_id / album_id / cover_url / duration_ms when known) instead of {"track_id": ...}, which the API rejected with a 422
+~ [CHANGE] post.library.track(track) and post.library.playlist_track(playlist_id, track) take the whole track dict (from get.library.tracks(), get.catalog.track() or search()), not just its ID; passing only an ID raises InvalidArgumentError with an explanation
+~ [FIX] post.library.playlist(description=...) : the API ignores the description on creation, so it is now set right after with a PUT
+~ [DOC] README and docs/POST.md: examples pass the whole track
+```
+
 ## Ver 1.4.0 - Sep 24, 2026
 
 ```diff

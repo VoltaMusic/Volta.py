@@ -75,7 +75,7 @@ class TestHttpErrors:
         fake_session.post_responses.append(FakeResponse(409, {"detail": "already in library"}))
 
         with pytest.raises(ConflictError) as exc:
-            client.post.library.track("t1")
+            client.post.library.track({"id": "t1", "name": "X", "artist": "Y", "album": "Z"})
 
         assert exc.value.status_code == 409
         assert exc.value.detail == "already in library"

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Optional, TYPE_CHECKING
+from typing import Any, Mapping, Optional, TYPE_CHECKING
 
 from ..exceptions import InvalidArgumentError
 from ._url import segment
@@ -18,20 +18,84 @@ def _playlist_fields(
     return {key: value for key, value in fields.items() if value is not None}
 
 
+def _names(value: Any) -> Optional[str]:
+    """"Daft Punk" -> "Daft Punk" ; [{"name": "A"}, {"name": "B"}] -> "A, B" ; {"name": "X"} -> "X"."""
+    if isinstance(value, str):
+        return value or None
+    if isinstance(value, Mapping):
+        return _names(value.get("name"))
+    if isinstance(value, list):
+        names = [n for n in (_names(v) for v in value) if n]
+        return ", ".join(names) or None
+    return None
+
+
+def _track_payload(track: Any) -> dict[str, Any]:
+    """Construit le corps attendu par l'API pour ajouter un titre, à partir
+    d'un titre tel que renvoyé par la lib, quelle que soit sa source :
+
+    - bibliothèque (`get.library.tracks()`) : `title`, `artist` et `album`
+      en texte, `artist_id`, `album_id`, `cover_url` ;
+    - catalogue (`get.catalog.track()`, `search()`...) : `name`, `artists`
+      (liste de {"id", "name"}) et `album` ({"id", "name", "images"}).
+
+    L'API exige `id`, `name`, `artist` et `album` ; les autres champs sont
+    envoyés quand ils sont connus.
+    """
+    if isinstance(track, str):
+        raise InvalidArgumentError(
+            "passe le titre complet (le dict renvoyé par get.library.tracks(), get.catalog.track()...), "
+            "pas seulement son ID : l'API exige aussi son nom, son artiste et son album"
+        )
+    if not isinstance(track, Mapping):
+        raise InvalidArgumentError(f"titre invalide : un dict est attendu, pas {type(track).__name__}")
+
+    album = track.get("album")
+    album_obj = album if isinstance(album, Mapping) else {}
+    artists = track.get("artists") if isinstance(track.get("artists"), list) else []
+    first_artist = artists[0] if artists and isinstance(artists[0], Mapping) else {}
+    images = album_obj.get("images") if isinstance(album_obj.get("images"), list) else []
+    first_image = images[0] if images and isinstance(images[0], Mapping) else {}
+
+    payload = {
+        "id": track.get("id") or track.get("track_id"),
+        "name": track.get("name") or track.get("title"),
+        "artist": _names(track.get("artist")) or _names(artists),
+        "album": _names(album),
+    }
+    missing = [key for key, value in payload.items() if not value]
+    if missing:
+        raise InvalidArgumentError(f"titre incomplet, champ(s) manquant(s) : {', '.join(missing)}")
+    payload["id"] = str(payload["id"])
+
+    optional = {
+        "artist_id": track.get("artist_id") or first_artist.get("id"),
+        "album_id": track.get("album_id") or album_obj.get("id"),
+        "cover_url": track.get("cover_url") or first_image.get("url"),
+        "duration_ms": track.get("duration_ms"),
+    }
+    payload.update({key: value for key, value in optional.items() if value is not None})
+    return payload
+
+
 class LibraryPost:
     def __init__(self, client: "VoltaClient") -> None:
         self.client = client
         self.endpoint = "/api/v1/library"
-    def track(self, track_id: str) -> Any:
+    def track(self, track: Mapping[str, Any]) -> Any:
         """
         Add a track to your library (like it).
+
+        The API needs the track's name, artist and album, not just its ID:
+        pass the track dict as returned by `get.catalog.track()`,
+        `get.catalog.search()` or `get.library.tracks()`.
 
         Scope: library:write
 
         Args:
-            track_id (str): The ID of the track.
+            track (dict): The track to add.
         """
-        return self.client._post(f"{self.endpoint}/tracks", {"track_id": track_id})
+        return self.client._post(f"{self.endpoint}/tracks", _track_payload(track))
     def playlist(self, name: str, description: Optional[str] = None, is_public: Optional[bool] = None) -> Any:
         """
         Create a new playlist.
@@ -41,22 +105,38 @@ class LibraryPost:
         Args:
             name (str): The name of the playlist.
             description (str, optional): The description of the playlist. Defaults to None.
+                The API ignores it on creation, so it is set right after with a PUT.
             is_public (bool, optional): Whether the playlist is public. Defaults to None (server default).
         """
         if not name:
             raise InvalidArgumentError("`name` est obligatoire pour créer une playlist")
-        return self.client._post(f"{self.endpoint}/playlists", _playlist_fields(name, description, is_public))
-    def playlist_track(self, playlist_id: str, track_id: str) -> Any:
+        created = self.client._post(f"{self.endpoint}/playlists", _playlist_fields(name, description, is_public))
+        # L'API ignore la description à la création (elle revient à null) mais
+        # l'accepte en modification : on la pose juste après si besoin.
+        if description and isinstance(created, dict) and created.get("id") and created.get("description") != description:
+            updated = self.client._put(
+                f"{self.endpoint}/playlists/{segment(created['id'])}", {"description": description}
+            )
+            if isinstance(updated, dict):
+                created = {**created, **updated}
+        return created
+    def playlist_track(self, playlist_id: str, track: Mapping[str, Any]) -> Any:
         """
         Add a track to a playlist.
+
+        The API needs the track's name, artist and album, not just its ID:
+        pass the track dict as returned by `get.library.tracks()`,
+        `get.catalog.track()` or `get.catalog.search()`.
 
         Scope: playlists:write
 
         Args:
             playlist_id (str): The ID of the playlist.
-            track_id (str): The ID of the track to add.
+            track (dict): The track to add.
         """
-        return self.client._post(f"{self.endpoint}/playlists/{segment(playlist_id)}/tracks", {"track_id": track_id})
+        return self.client._post(
+            f"{self.endpoint}/playlists/{segment(playlist_id)}/tracks", _track_payload(track)
+        )
 
 
 class LibraryPut:

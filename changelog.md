@@ -6,6 +6,19 @@ Legend: `+` added · `~` changed / fixed · `-` removed
 
 ---
 
+## Ver 1.3.0 - Sep 24, 2026
+
+```diff
++ [TEST] URL encoding tests for search / stream parameters and for IDs in every route
+
+~ [FIX] catalog.search() and catalog.stream() send q / track_id through params=: queries with &, #, / or spaces are now URL-encoded instead of breaking the request
+~ [FIX] IDs inserted in URL paths are encoded: an ID containing /, ? or # can no longer change the route that is called
+~ [FIX] main.py only deletes its own results/ folder on exit, instead of every .json file in the current directory
+~ [DOC] catalog.me() documents the fields the API actually returns (sub, name, preferred_username, nickname, picture): never the email or a subscription status
+
+- [DOC] README: search URL-encoding removed from Known limitations
+```
+
 ## Ver 1.2.0 - Sep 24, 2026
 
 ```diff

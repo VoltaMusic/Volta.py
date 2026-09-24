@@ -477,12 +477,12 @@ class TestCatalogMe:
     def test_me_success_returns_json(self, make_client, fake_session):
         client = make_client()
         fake_session.get_responses.append(
-            FakeResponse(200, {"username": "hugoh", "email": "hugo@example.com"})
+            FakeResponse(200, {"sub": "u1", "preferred_username": "hugoh", "picture": "https://cdn.test/a.jpg"})
         )
 
         result = client.get.catalog.me()
 
-        assert result == {"username": "hugoh", "email": "hugo@example.com"}
+        assert result == {"sub": "u1", "preferred_username": "hugoh", "picture": "https://cdn.test/a.jpg"}
 
     def test_me_builds_expected_url(self, make_client, fake_session):
         client = make_client()

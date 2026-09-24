@@ -76,6 +76,10 @@ class Catalog:
         return self.client._get(f"{self.endpoint}/playback/state")
     def me(self) -> Any:
         """
-        Get the current user's profile information, including username, email, and subscription status.
+        Get the current user's public profile: `sub` (user ID), `name`,
+        `preferred_username`, `nickname` and `picture` (avatar URL).
+        The email address is never returned.
+
+        Scope: profile:read
         """
         return self.client._get(f"{self.endpoint}/auth/me")

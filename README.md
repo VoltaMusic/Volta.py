@@ -102,7 +102,7 @@ with VoltaClient() as client:
     client.get.catalog.stream("track_id")    # track info and streaming URL
     client.get.catalog.home()                # home page sections (recommendations)
     client.get.catalog.state()               # current playback state
-    client.get.catalog.me()                  # your profile (username, email, subscription)
+    client.get.catalog.me()                  # your profile: sub, name, preferred_username, nickname, picture (never the email)
 ```
 
 #### Generic GET

@@ -8,6 +8,8 @@ on:
     branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
+  # Bouton "Run workflow" dans l'onglet Actions, pour lancer la matrice à la main.
+  workflow_dispatch:
 
 permissions:
   contents: read

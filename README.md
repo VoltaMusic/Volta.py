@@ -59,9 +59,18 @@ Using the context manager (`with ... as client:`) is the recommended way to use 
 
 If you don't use a context manager, call `client.stop_background_refresh()` yourself before your program exits.
 
+To see a small loading spinner (on stderr) while a slow request is running, pass `show_progress=True`:
+
+```python
+with VoltaClient(show_progress=True) as client:
+    ...
+```
+
 ---
 
 ## 📖 Documentation
+
+Full reference, one page per HTTP verb: [GET](docs/GET.md) · [POST](docs/POST.md) · [PUT](docs/PUT.md) · [DELETE](docs/DELETE.md)
 
 ### 🟢 GET
 
@@ -193,7 +202,7 @@ VoltaAPIExceptions
 ├── NetworkError                 no HTTP response at all
 │   ├── ConnectionFailedError    server unreachable, DNS, connection refused, SSL
 │   └── RequestTimeoutError      no response within the timeout
-├── InvalidResponseError         2xx response that can't be used (not JSON, missing field)
+├── InvalidResponseError         2xx response that can't be used (not JSON, missing field, search= on a non-list)
 └── APIError                     the API answered with an error status
     ├── BadRequestError          400
     ├── AuthenticationError      401 — still invalid after an automatic refresh+retry
@@ -265,6 +274,20 @@ pip install pytest
 pytest
 ```
 
+To run the lint and the tests on every supported Python version (3.10 → 3.13), like the CI does, use the matrix scripts. They need [uv](https://docs.astral.sh/uv/) (`pip install uv`), which downloads the missing Python versions and uses a temporary environment per version:
+
+```bash
+scripts/test_matrix.sh            # Linux / macOS / Git Bash
+scripts/test_matrix.sh 3.12 3.13  # only some versions
+```
+
+```bat
+scripts	est_matrix.bat           :: Windows (cmd / PowerShell)
+scripts	est_matrix.bat 3.12 3.13
+```
+
+On GitHub, the same matrix runs on every push and pull request to `main`, and can be started by hand from the **Actions** tab (**Python application** → **Run workflow**).
+
 Tests are split by concern for readability:
 
 ```
@@ -278,14 +301,8 @@ tests/
 ├── test_exceptions.py         # every exception: HTTP codes, network, invalid responses, token file, arguments
 ├── test_progress.py           # spinner: no added latency, stderr only, ASCII fallback
 ├── test_session.py            # retry policy: GET and token retried, POST / PUT / DELETE never
-└── test_client_lifecycle.py   # token loading/saving, context manager, thread-safety
+└── test_client_lifecycle.py   # token loading/saving, context manager, thread-safety, defaults
 ```
-
----
-
-## ⚠️ Known limitations
-
-- `library.tracks()/albums()/playlists()` with `search=` silently return an empty list if the API response isn't a list (rather than raising).
 
 ---
 

@@ -15,29 +15,37 @@
     - [artist\_tracks()](#artist_tracks)
       - [Use:](#use-4)
     - [playlists()](#playlists)
+      - [Use:](#use-5)
   - [GET in global app](#get-in-global-app)
       - [Base:](#base-1)
     - [search()](#search)
-      - [Use:](#use-5)
-    - [artist()](#artist)
       - [Use:](#use-6)
-    - [album()](#album)
+    - [artist()](#artist)
       - [Use:](#use-7)
-    - [track()](#track)
+    - [album()](#album)
       - [Use:](#use-8)
-    - [playlist()](#playlist)
+    - [track()](#track)
       - [Use:](#use-9)
-    - [home()](#home)
+    - [playlist()](#playlist)
       - [Use:](#use-10)
-    - [state()](#state)
+    - [home()](#home)
       - [Use:](#use-11)
-    - [me()](#me)
+    - [stream()](#stream)
       - [Use:](#use-12)
+    - [state()](#state)
+      - [Use:](#use-13)
+    - [me()](#me)
+      - [Use:](#use-14)
+  - [Generic GET](#generic-get)
 
 ## GET in your library
 
-Fetch many data in your library,
-you cannot use this for a global use or search.
+Fetch data from your own library (liked tracks, albums, followed artists, your playlists).
+To search the global Volta catalog, use [`get.catalog`](#get-in-global-app) instead.
+
+About `search=`: the filtering is done client-side, on the list returned by the API.
+It is case- and accent-insensitive (`"beyonce"` finds `"Beyoncé"`).
+If the API doesn't return a list, an `InvalidResponseError` is raised.
 
 #### Base:
 ```python
@@ -48,16 +56,18 @@ VoltaClient.get.library.
 ### tracks()
 > Get all liked tracks.
 >
-> If a search string is provided, filter the tracks by title containing the search string (case-insensitive).
+> If a search string is provided, filter the tracks by title containing the search string (case- and accent-insensitive).
 >
 > Args:
 > - search (str, optional): A string to filter tracks by title. Defaults to None.
+>
+> Scope: `library:read`
 
 #### Use:
 ```python
 with VoltaClient() as client:
-    client.get.library.tracks()             # Fetch all liked song
-    client.git.library.tracks("Song Title") # Search all match with the title in your liked song
+    client.get.library.tracks()                    # Fetch all liked tracks
+    client.get.library.tracks(search="Song Title") # Liked tracks whose title matches
 ```
 
 
@@ -65,83 +75,93 @@ with VoltaClient() as client:
 ### albums()
 > Get all liked albums.
 >
-> If a search string is provided, filter the albums by title containing the search string (case-insensitive).
+> If a search string is provided, filter the albums by title containing the search string (case- and accent-insensitive).
 >
 > Args:
 > - search (str, optional): A string to filter albums by title. Defaults to None.
+>
+> Scope: `library:read`
 
 #### Use:
 ```python
 with VoltaClient() as client:
-    client.get.library.albums()              # Fetch all album in your liked song
-    client.git.library.tracks("Album Title") # Search all match with the title album in your liked song
+    client.get.library.albums()                     # Fetch all albums of your library
+    client.get.library.albums(search="Album Title") # Albums whose title matches
 ```
 
 
 ---
 ### artists()
-> Get all liked artists.
+> Get all followed artists.
 >
-> If a search string is provided, filter the artists by name containing the search string (case-insensitive).
+> If a search string is provided, filter the artists by name containing the search string (case- and accent-insensitive).
 >
 > Args:
 > - search (str, optional): A string to filter artists by name. Defaults to None.
+>
+> Scope: `library:read`
 
 #### Use:
 ```python
 with VoltaClient() as client:
-    client.get.library.artists()             # Fetch all artists followed
-    client.git.library.tracks("Artist name") # Search all match with the artists name in your followed
+    client.get.library.artists()                     # Fetch all followed artists
+    client.get.library.artists(search="Artist name") # Followed artists whose name matches
 ```
 
 
 ---
 ### artist_albums()
-> Get all albums of a specific artist by their ID.
+> Get the albums of a specific artist that are in your library.
 >
 > Args:
 > - id (str): The ID of the artist.
+>
+> Scope: `library:read`
 
 #### Use:
 ```python
 with VoltaClient() as client:
-    client.get.library.artist_albums("Artist id") # Fetch all artist albums
+    client.get.library.artist_albums("Artist ID") # Albums of this artist in your library
 ```
 
 
 ---
 ### artist_tracks()
-> Get all tracks of a specific artist by their ID.
+> Get the tracks of a specific artist that are in your library.
 >
 > Args:
 > - id (str): The ID of the artist.
+>
+> Scope: `library:read`
 
 #### Use:
 ```python
 with VoltaClient() as client:
-    client.get.library.artist_tracks("Artist id") # Fetch all artist tracks
+    client.get.library.artist_tracks("Artist ID") # Tracks of this artist in your library
 ```
 
 
 ---
 ### playlists()
-> Get all liked playlists or a specific playlist by ID.
+> Get all your playlists, or a specific playlist by ID.
 >
-> If a search string is provided, filter the playlists by name containing the search string (case-insensitive).
-> If both search and id are provided, a ValueError will be raised.
+> If a search string is provided, filter the playlists by name containing the search string (case- and accent-insensitive).
+> If both search and id are provided, an `InvalidArgumentError` is raised (before any request is sent).
 >
 > Args:
 > - search (str, optional): A string to filter playlists by name. Defaults to None.
 >   - search is just for finding playlists by name, while id is for fetching a specific playlist.
 > - id (str, optional): The ID of a specific playlist. Defaults to None.
 >   - id is for fetching all data and tracks of a specific playlist, while search is just for finding playlists by name.
+>
+> Scope: `playlists:read`
 
-#### Use:
+#### Use:
 ```python
 with VoltaClient() as client:
     client.get.library.playlists()                       # Fetch all your playlists
-    client.get.library.playlists(search="Playlist name") # Fetch every match with the research
-    client.get.library.playlists(id="Playlist id")       # Fetch all data and tracks in one playlist
+    client.get.library.playlists(search="Playlist name") # Playlists whose name matches
+    client.get.library.playlists(id="Playlist ID")       # All data and tracks of one playlist
 ```
 
 
@@ -150,8 +170,9 @@ with VoltaClient() as client:
 
 ## GET in global app
 
-Fetch data from global,
-you cannot use this for fetch your data like before
+Fetch data from the global Volta catalog.
+These routes also work without any token (public access), `catalog:read` only matters for personalised results.
+To read your own library, use [`get.library`](#get-in-your-library) instead.
 
 #### Base:
 ```python
@@ -161,14 +182,16 @@ VoltaClient.get.catalog.
 ---
 ### search()
 > Search for tracks, albums, artists, and playlists globally.
-
+>
 > Args:
-> - query (str): The search query string.
+> - query (str): The search query string. Special characters (`&`, `#`, `/`...) are URL-encoded automatically.
+>
+> Scope: `catalog:read`
 
 #### Use:
 ```python
 with VoltaClient() as client:
-    client.get.catalog.search("Your query") # Search tracks, artists, albums
+    client.get.catalog.search("AC/DC & Queen") # Search tracks, artists, albums, playlists
 ```
 
 ---
@@ -178,11 +201,13 @@ with VoltaClient() as client:
 >
 > Args:
 > - id (str): The ID of the artist.
+>
+> Scope: `catalog:read`
 
 #### Use:
 ```python
 with VoltaClient() as client:
-    client.get.catalog.artist("Artists ID") # Search with the artists ID
+    client.get.catalog.artist("Artist ID")
 ```
 
 
@@ -193,6 +218,8 @@ with VoltaClient() as client:
 >
 > Args:
 > - id (str): The ID of the album.
+>
+> Scope: `catalog:read`
 
 #### Use:
 ```python
@@ -207,6 +234,8 @@ with VoltaClient() as client:
 >
 > Args:
 > - id (str): The ID of the track.
+>
+> Scope: `catalog:read`
 
 #### Use:
 ```python
@@ -217,13 +246,13 @@ with VoltaClient() as client:
 
 ---
 ### playlist()
-> Get details of a specific public playlist by its ID.
+> Get details of a public or shared playlist by its ID.
 > Get all tracks of the playlist.
 >
 > Args:
 > - id (str): The ID of the playlist.
-
-**Not working yet**: currently returns a `NotImplementedError` instance and does not call the API.
+>
+> Scope: `catalog:read`
 
 #### Use:
 ```python
@@ -236,6 +265,8 @@ with VoltaClient() as client:
 ### home()
 > Get the home page data,
 > including recommended tracks, albums, artists, and playlists.
+>
+> Scope: `catalog:read`
 
 #### Use:
 ```python
@@ -245,14 +276,39 @@ with VoltaClient() as client:
 
 
 ---
-### state()
-> Get the current state of the catalog,
-> including available genres, moods, and other metadata.
+### stream()
+> Get the track info and a short-lived streaming URL.
+> `stream_url` is an opaque reference to the Volta backend (`/api/v1/stream_relay_ref?ref=...`), resolved server-side.
+> There is no raw audio download.
+>
+> Args:
+> - id (str): The ID of the track.
+>
+> Scope: `stream:read` (limited to 10 requests / minute)
 
 #### Use:
 ```python
 with VoltaClient() as client:
-    client.get.catalog.state()
+    info = client.get.catalog.stream("Track ID")
+    info["stream_url"]
+```
+
+
+---
+### state()
+> Get what is playing right now on your account: track, position, device, shuffle and repeat mode.
+> When nothing is playing, you still get a normal response with `is_playing: False` and the other fields set to `None`.
+>
+> To get the live position without calling the API again: `progress_ms + (now_ms - server_time_ms)`.
+>
+> Scope: `playback:read`
+
+#### Use:
+```python
+with VoltaClient() as client:
+    state = client.get.catalog.state()
+    if state["is_playing"]:
+        print(state["item"]["title"], "on", state["device"]["name"])
 ```
 
 
@@ -268,4 +324,14 @@ with VoltaClient() as client:
 ```python
 with VoltaClient() as client:
     client.get.catalog.me()
+```
+
+
+## Generic GET
+
+Call any GET route that has no dedicated method:
+
+```python
+with VoltaClient() as client:
+    client.get.request("/api/v1/some/other/endpoint")
 ```

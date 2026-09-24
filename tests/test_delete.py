@@ -109,3 +109,14 @@ class TestDeleteLibrary:
 
         with pytest.raises(NotFoundError):
             client.delete.library.playlist("unknown")
+
+
+class TestDeletePathEncoding:
+    def test_ids_are_encoded_in_write_routes(self, make_client, fake_session):
+        client = make_client()
+        fake_session.delete_responses.append(FakeResponse(200, {}))
+
+        client.delete.library.playlist_track("pl/1", "t 1")
+
+        _, url, _, _ = fake_session.calls[0]
+        assert url.endswith("/api/v1/library/playlists/pl%2F1/tracks/t%201")

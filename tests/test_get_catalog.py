@@ -7,6 +7,7 @@ Lancer avec : pytest tests/test_get_catalog.py -v
 from __future__ import annotations
 
 import pytest
+import requests
 
 from VoltaLibPython.exceptions import APIError
 
@@ -31,17 +32,20 @@ class TestCatalogSearch:
         client.get.catalog.search("daft punk")
 
         _, url, _, params = fake_session.calls[0]
-        assert url.endswith("/api/v1/search?q=daft punk")
-        assert params is None
+        assert url.endswith("/api/v1/search")
+        assert params == {"q": "daft punk"}
 
-    def test_search_query_is_not_url_encoded(self, make_client, fake_session):
+    def test_search_query_with_special_characters_is_encoded(self, make_client, fake_session):
+        # Avant : "daft & punk" coupait la requête en deux paramètres.
         client = make_client()
         fake_session.get_responses.append(FakeResponse(200, {}))
 
-        client.get.catalog.search("daft & punk")
+        client.get.catalog.search("daft & punk #1")
 
-        _, url, _, _ = fake_session.calls[0]
-        assert url.endswith("/api/v1/search?q=daft & punk")
+        _, url, _, params = fake_session.calls[0]
+        assert params == {"q": "daft & punk #1"}
+        prepared = requests.Request("GET", url, params=params).prepare()
+        assert prepared.url.endswith("/api/v1/search?q=daft+%26+punk+%231")
 
     def test_search_non_200_raises_api_error(self, make_client, fake_session):
         client = make_client()
@@ -338,9 +342,9 @@ class TestCatalogStream:
 
         method, url, headers, params = fake_session.calls[0]
         assert method == "GET"
-        assert url.endswith("/api/v1/stream?track_id=t1")
+        assert url.endswith("/api/v1/stream")
         assert headers["Authorization"] == "Bearer initial_token"
-        assert params is None
+        assert params == {"track_id": "t1"}
 
     def test_stream_non_200_raises_api_error(self, make_client, fake_session):
         client = make_client()
@@ -373,9 +377,8 @@ class TestCatalogStream:
         client.get.catalog.stream("t1")
         client.get.catalog.stream("t2")
 
-        urls = [c[1] for c in fake_session.calls]
-        assert urls[0].endswith("/api/v1/stream?track_id=t1")
-        assert urls[1].endswith("/api/v1/stream?track_id=t2")
+        params = [c[3] for c in fake_session.calls]
+        assert params == [{"track_id": "t1"}, {"track_id": "t2"}]
 
 
 class TestCatalogHome:
@@ -474,12 +477,12 @@ class TestCatalogMe:
     def test_me_success_returns_json(self, make_client, fake_session):
         client = make_client()
         fake_session.get_responses.append(
-            FakeResponse(200, {"username": "hugoh", "email": "hugo@example.com"})
+            FakeResponse(200, {"sub": "u1", "preferred_username": "hugoh", "picture": "https://cdn.test/a.jpg"})
         )
 
         result = client.get.catalog.me()
 
-        assert result == {"username": "hugoh", "email": "hugo@example.com"}
+        assert result == {"sub": "u1", "preferred_username": "hugoh", "picture": "https://cdn.test/a.jpg"}
 
     def test_me_builds_expected_url(self, make_client, fake_session):
         client = make_client()
@@ -515,3 +518,33 @@ class TestCatalogMe:
 
         assert result == {"username": "hugoh"}
         assert client.token == "new_token"
+
+class TestPathEncoding:
+    @pytest.mark.parametrize(
+        "call, expected",
+        [
+            (lambda c: c.get.catalog.artist("a/b"), "/api/v1/artists/a%2Fb"),
+            (lambda c: c.get.catalog.album("x?y=1"), "/api/v1/album/x%3Fy%3D1"),
+            (lambda c: c.get.catalog.track("t#1"), "/api/v1/track/t%231"),
+            (lambda c: c.get.catalog.playlist("my list"), "/api/v1/playlist/my%20list"),
+            (lambda c: c.get.library.artist_albums("../admin"), "/api/v1/library/artists/..%2Fadmin/albums"),
+            (lambda c: c.get.library.playlists(id="p/1"), "/api/v1/library/playlists/p%2F1"),
+        ],
+    )
+    def test_ids_cannot_change_the_route(self, make_client, fake_session, call, expected):
+        client = make_client()
+        fake_session.get_responses.append(FakeResponse(200, {}))
+
+        call(client)
+
+        _, url, _, _ = fake_session.calls[0]
+        assert url.endswith(expected)
+
+    def test_plain_ids_are_unchanged(self, make_client, fake_session):
+        client = make_client()
+        fake_session.get_responses.append(FakeResponse(200, {}))
+
+        client.get.catalog.playlist("bb7d0e57-bb01-4491-88b6-ce62ee3d75f0")
+
+        _, url, _, _ = fake_session.calls[0]
+        assert url.endswith("/api/v1/playlist/bb7d0e57-bb01-4491-88b6-ce62ee3d75f0")

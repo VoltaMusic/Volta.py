@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import shutil
 import time
 from datetime import datetime
 
@@ -169,12 +170,12 @@ def main():
     run_all_tests()
 
 def pause():
-    input("Press Enter to exit and clear...")
+    input(f"Press Enter to exit and delete {RESULTS_DIR}/...")
 
 def clear():
-    for filename in os.listdir("."):
-        if filename.endswith(".json"):
-            os.remove(filename)
+    """Delete only what this script produced (the results/ folder), never
+    other .json files that happen to sit in the current directory."""
+    shutil.rmtree(RESULTS_DIR, ignore_errors=True)
 
 
 if __name__ == "__main__":

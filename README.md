@@ -27,7 +27,7 @@ pip install git+https://github.com/VoltaMusic/Volta.py.git
 
 ```bash
 python -m build
-pip install dist/voltalib-1.2.0-py3-none-any.whl
+pip install dist/voltalib-1.3.0-py3-none-any.whl
 ```
 
 ---
@@ -102,7 +102,7 @@ with VoltaClient() as client:
     client.get.catalog.stream("track_id")    # track info and streaming URL
     client.get.catalog.home()                # home page sections (recommendations)
     client.get.catalog.state()               # current playback state
-    client.get.catalog.me()                  # your profile (username, email, subscription)
+    client.get.catalog.me()                  # your profile: sub, name, preferred_username, nickname, picture (never the email)
 ```
 
 #### Generic GET
@@ -285,7 +285,6 @@ tests/
 
 ## ⚠️ Known limitations
 
-- `catalog.search(query)` inserts `query` directly into the URL (`?q={query}`) rather than through `params=`, so it isn't URL-encoded. Works fine for simple words, may break for queries with `&`, `#`, or other special characters.
 - `library.tracks()/albums()/playlists()` with `search=` silently return an empty list if the API response isn't a list (rather than raising).
 
 ---

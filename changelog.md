@@ -6,7 +6,7 @@ Legend: `+` added · `~` changed / fixed · `-` removed
 
 ---
 
-## Unreleased
+## Ver 1.0.0 - Sep 24, 2026
 
 ```diff
 + [FEATURE] client.post.library: track(track_id), playlist(name, description, is_public), playlist_track(playlist_id, track_id)
@@ -14,6 +14,9 @@ Legend: `+` added · `~` changed / fixed · `-` removed
 + [FEATURE] client.delete.library: track, album, artist, playlist, playlist_track
 + [TEST] Tests for every new POST / PUT / DELETE method
 + [DOC] README: POST / PUT / DELETE sections
++ [BUILD] dist/ 1.0.0 wheel and tarball
+
+~ [DOC] README install command points to 1.0.0
 
 - [REMOVED] client.post.track(data) and client.delete.track(id): use client.post.library.track(track_id) / client.delete.library.track(track_id)
 ```

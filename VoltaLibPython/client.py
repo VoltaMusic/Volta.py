@@ -20,7 +20,13 @@ from .exceptions import (
     TokenStorageError,
     error_from_response,
 )
-from .session import _build_session, DEFAULT_TIMEOUT, TOKEN_REFRESH_MARGIN
+from .session import (
+    _build_session,
+    _mount_token_retry,
+    DEFAULT_TIMEOUT,
+    TOKEN_ENDPOINT,
+    TOKEN_REFRESH_MARGIN,
+)
 from .progress import _Spinner
 from .endpoints.verbs import Get, Post, Put, Delete
 
@@ -43,6 +49,7 @@ class VoltaClient:
         self.show_progress = show_progress
 
         self._session = _build_session()
+        _mount_token_retry(self._session, self.base_url)
         self._token_lock = threading.Lock()
         self._refresh_timer: Optional[threading.Timer] = None
         self._closed = False
@@ -67,7 +74,7 @@ class VoltaClient:
                 f"{' et '.join(missing)} manquant(s). Ajoute-les dans le fichier .env à la racine du projet "
                 "(ou vérifie qu'une variable d'environnement vide du même nom ne les masque pas)."
             )
-        url = f"{self.base_url}/api/v1/oauth/token"
+        url = f"{self.base_url}{TOKEN_ENDPOINT}"
         payload = {
             "grant_type": "client_credentials",
             "client_id": self.client_id,

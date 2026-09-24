@@ -27,7 +27,7 @@ pip install git+https://github.com/VoltaMusic/Volta.py.git
 
 ```bash
 python -m build
-pip install dist/voltalib-1.1.3-py3-none-any.whl
+pip install dist/voltalib-1.2.0-py3-none-any.whl
 ```
 
 ---
@@ -202,7 +202,7 @@ VoltaAPIExceptions
     ├── ConflictError            409
     ├── UnprocessableEntityError 422 — request body rejected
     ├── RateLimitError           429 — see e.retry_after
-    └── ServerError              500–599 (after 3 automatic retries)
+    └── ServerError              500–599 (GET: after 3 automatic retries; POST / PUT / DELETE: never retried)
 ```
 
 Any other non-2xx status raises a plain `APIError`.
@@ -277,6 +277,7 @@ tests/
 ├── test_delete.py             # library.track / album / artist / playlist / playlist_track
 ├── test_exceptions.py         # every exception: HTTP codes, network, invalid responses, token file, arguments
 ├── test_progress.py           # spinner: no added latency, stderr only, ASCII fallback
+├── test_session.py            # retry policy: GET and token retried, POST / PUT / DELETE never
 └── test_client_lifecycle.py   # token loading/saving, context manager, thread-safety
 ```
 

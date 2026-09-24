@@ -3,7 +3,7 @@ from __future__ import annotations
 import unicodedata
 from typing import Any, TYPE_CHECKING
 
-from ..exceptions import InvalidArgumentError
+from ..exceptions import InvalidArgumentError, InvalidResponseError
 from ._url import segment
 
 if TYPE_CHECKING:
@@ -20,11 +20,16 @@ def _normalize(text: str) -> str:
 def _filter(result: Any, key: str, search: str) -> list[Any]:
     """Garde les éléments de `result` dont le champ `key` contient `search`.
 
-    Renvoie une liste vide si `result` n'est pas une liste. Les éléments qui
-    ne sont pas des dicts, ou dont le champ est absent / null, sont ignorés.
+    Lève InvalidResponseError si l'API n'a pas renvoyé une liste : filtrer
+    une autre forme de réponse n'a pas de sens, et renvoyer une liste vide
+    ferait croire à tort qu'il n'y a aucun résultat. Les éléments qui ne
+    sont pas des dicts, ou dont le champ est absent / null, sont ignorés.
     """
     if not isinstance(result, list):
-        return []
+        raise InvalidResponseError(
+            f"Recherche impossible : l'API devait renvoyer une liste, elle a renvoyé {type(result).__name__}",
+            response_text=str(result),
+        )
     query = _normalize(search)
     return [
         item for item in result
@@ -41,6 +46,7 @@ class Library:
         Get all liked tracks.
 
         If a search string is provided, filter the tracks by title containing the search string (case- and accent-insensitive).
+        Raises InvalidResponseError if the API doesn't return a list.
 
         Args:
             search (str, optional): A string to filter tracks by title. Defaults to None.
@@ -54,6 +60,7 @@ class Library:
         Get all liked albums.
 
         If a search string is provided, filter the albums by title containing the search string (case- and accent-insensitive).
+        Raises InvalidResponseError if the API doesn't return a list.
 
         Args:
             search (str, optional): A string to filter albums by title. Defaults to None.
@@ -67,6 +74,7 @@ class Library:
         Get all liked artists.
 
         If a search string is provided, filter the artists by name containing the search string (case- and accent-insensitive).
+        Raises InvalidResponseError if the API doesn't return a list.
 
         Args:
             search (str, optional): A string to filter artists by name. Defaults to None.
@@ -96,6 +104,7 @@ class Library:
         Get all liked playlists or a specific playlist by ID.
 
         If a search string is provided, filter the playlists by name containing the search string (case- and accent-insensitive).
+        Raises InvalidResponseError if the API doesn't return a list.
         If both search and id are provided, an InvalidArgumentError will be raised.
 
         Args:

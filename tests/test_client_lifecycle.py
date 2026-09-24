@@ -116,3 +116,8 @@ class TestTokenThreadSafety:
         client._handle_unauthorized()
 
         assert client._auth_headers()["Authorization"] == "Bearer manually_refreshed"
+
+class TestDefaults:
+    def test_spinner_is_disabled_by_default(self, make_client):
+        client = make_client()
+        assert client.show_progress is False

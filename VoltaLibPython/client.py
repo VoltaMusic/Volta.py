@@ -40,7 +40,7 @@ class VoltaClient:
         self,
         base_url: str = "https://api.volta-music.com",
         token_file: str = "config/token.json",
-        show_progress: bool = True,
+        show_progress: bool = False,
     ) -> None:
         self.token_file = token_file
         self.base_url = base_url

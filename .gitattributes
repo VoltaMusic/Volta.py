@@ -1,0 +1,4 @@
+# Fins de ligne fixes quel que soit le système : un .sh en CRLF ne tourne
+# pas sous Linux (CI), un .bat en LF peut mal se comporter sous Windows.
+*.sh text eol=lf
+*.bat text eol=crlf

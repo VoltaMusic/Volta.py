@@ -6,6 +6,26 @@ Legend: `+` added · `~` changed / fixed · `-` removed
 
 ---
 
+## Ver 1.4.0 - Sep 24, 2026
+
+```diff
++ [CI] Tests and lint run on Python 3.10, 3.11, 3.12 and 3.13 (matrix, fail-fast disabled) instead of 3.10 only
++ [BUILD] PyPI classifiers list the supported Python versions (3.10 to 3.13)
++ [CI] workflow_dispatch: the test matrix can be started by hand from the Actions tab
++ [DEV] scripts/test_matrix.sh and scripts/test_matrix.bat run the lint and the tests on every supported Python version with uv, like the CI
++ [DEV] .gitattributes keeps .sh files in LF and .bat files in CRLF
++ [DOC] docs/POST.md, docs/PUT.md and docs/DELETE.md
+
+~ [CHANGE] requires-python raised from >=3.8 to >=3.10: the pinned dependencies (python-dotenv 1.2.3) need 3.10+ and the build backend (setuptools>=77) no longer installs on 3.8
+~ [CI] actions/setup-python upgraded from v3 to v5
+~ [CHANGE] The loading spinner is off by default (show_progress=False): pass show_progress=True to enable it. main.py keeps it on
+~ [CHANGE] library search= raises InvalidResponseError when the API doesn't return a list, instead of silently returning an empty list
+~ [FIX] docs/GET.md: client.git → client.get, albums() / artists() examples called tracks(), playlist() wrongly marked as not working, state() described the wrong data, stream() was missing, ValueError → InvalidArgumentError, scopes added
+~ [DOC] README: links to the per-verb docs, show_progress, matrix scripts and manual CI run
+
+- [DOC] README: last entry removed from Known limitations (search= on a non-list response)
+```
+
 ## Ver 1.3.0 - Sep 24, 2026
 
 ```diff

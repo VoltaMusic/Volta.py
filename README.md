@@ -285,7 +285,6 @@ tests/
 
 ## ⚠️ Known limitations
 
-- `catalog.search(query)` inserts `query` directly into the URL (`?q={query}`) rather than through `params=`, so it isn't URL-encoded. Works fine for simple words, may break for queries with `&`, `#`, or other special characters.
 - `library.tracks()/albums()/playlists()` with `search=` silently return an empty list if the API response isn't a list (rather than raising).
 
 ---

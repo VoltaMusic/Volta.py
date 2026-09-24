@@ -4,6 +4,7 @@ import unicodedata
 from typing import Any, TYPE_CHECKING
 
 from ..exceptions import InvalidArgumentError
+from ._url import segment
 
 if TYPE_CHECKING:
     from ..client import VoltaClient
@@ -81,7 +82,7 @@ class Library:
         Args:
             id (str): The ID of the artist.
         """
-        return self.client._get(f"{self.endpoint}/artists/{id}/albums")
+        return self.client._get(f"{self.endpoint}/artists/{segment(id)}/albums")
     def artist_tracks(self, id: str) -> Any:
         """
         Get all tracks of a specific artist by their ID.
@@ -89,7 +90,7 @@ class Library:
         Args:
             id (str): The ID of the artist.
         """
-        return self.client._get(f"{self.endpoint}/artists/{id}/tracks")
+        return self.client._get(f"{self.endpoint}/artists/{segment(id)}/tracks")
     def playlists(self, search: str = None, id: str = None) -> Any:
         """
         Get all liked playlists or a specific playlist by ID.
@@ -106,7 +107,7 @@ class Library:
         if search is not None and id is not None:
             raise InvalidArgumentError("`search` et `id` ne peuvent pas être utilisés en même temps")
         if id:
-            return self.client._get(f"{self.endpoint}/playlists/{id}")
+            return self.client._get(f"{self.endpoint}/playlists/{segment(id)}")
         result = self.client._get(f"{self.endpoint}/playlists")
         if search:
             return _filter(result, "name", search)

@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Any, Optional, TYPE_CHECKING
 
 from ..exceptions import InvalidArgumentError
+from ._url import segment
 
 if TYPE_CHECKING:
     from ..client import VoltaClient
@@ -55,7 +56,7 @@ class LibraryPost:
             playlist_id (str): The ID of the playlist.
             track_id (str): The ID of the track to add.
         """
-        return self.client._post(f"{self.endpoint}/playlists/{playlist_id}/tracks", {"track_id": track_id})
+        return self.client._post(f"{self.endpoint}/playlists/{segment(playlist_id)}/tracks", {"track_id": track_id})
 
 
 class LibraryPut:
@@ -86,7 +87,7 @@ class LibraryPut:
         fields = _playlist_fields(name, description, is_public)
         if not fields:
             raise InvalidArgumentError("indique au moins un champ à modifier : `name`, `description` ou `is_public`")
-        return self.client._put(f"{self.endpoint}/playlists/{playlist_id}", fields)
+        return self.client._put(f"{self.endpoint}/playlists/{segment(playlist_id)}", fields)
     def reorder(self, playlist_id: str, track_ids: list[str]) -> Any:
         """
         Reorder the tracks of a playlist.
@@ -98,7 +99,7 @@ class LibraryPut:
             track_ids (list[str]): The track IDs of the playlist, in the new order.
         """
         return self.client._put(
-            f"{self.endpoint}/playlists/{playlist_id}/tracks/reorder", {"track_ids": list(track_ids)}
+            f"{self.endpoint}/playlists/{segment(playlist_id)}/tracks/reorder", {"track_ids": list(track_ids)}
         )
 
 
@@ -115,7 +116,7 @@ class LibraryDelete:
         Args:
             track_id (str): The ID of the track.
         """
-        return self.client._delete(f"{self.endpoint}/tracks/{track_id}")
+        return self.client._delete(f"{self.endpoint}/tracks/{segment(track_id)}")
     def album(self, album_id: str) -> Any:
         """
         Remove every track of an album from your library.
@@ -125,7 +126,7 @@ class LibraryDelete:
         Args:
             album_id (str): The ID of the album.
         """
-        return self.client._delete(f"{self.endpoint}/albums/{album_id}")
+        return self.client._delete(f"{self.endpoint}/albums/{segment(album_id)}")
     def artist(self, artist_id: str) -> Any:
         """
         Unfollow an artist.
@@ -135,7 +136,7 @@ class LibraryDelete:
         Args:
             artist_id (str): The ID of the artist.
         """
-        return self.client._delete(f"{self.endpoint}/artists/{artist_id}")
+        return self.client._delete(f"{self.endpoint}/artists/{segment(artist_id)}")
     def playlist(self, playlist_id: str) -> Any:
         """
         Delete a playlist.
@@ -145,7 +146,7 @@ class LibraryDelete:
         Args:
             playlist_id (str): The ID of the playlist.
         """
-        return self.client._delete(f"{self.endpoint}/playlists/{playlist_id}")
+        return self.client._delete(f"{self.endpoint}/playlists/{segment(playlist_id)}")
     def playlist_track(self, playlist_id: str, track_id: str) -> Any:
         """
         Remove a track from a playlist.
@@ -156,4 +157,4 @@ class LibraryDelete:
             playlist_id (str): The ID of the playlist.
             track_id (str): The ID of the track to remove.
         """
-        return self.client._delete(f"{self.endpoint}/playlists/{playlist_id}/tracks/{track_id}")
+        return self.client._delete(f"{self.endpoint}/playlists/{segment(playlist_id)}/tracks/{segment(track_id)}")

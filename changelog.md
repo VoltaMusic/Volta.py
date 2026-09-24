@@ -6,6 +6,18 @@ Legend: `+` added · `~` changed / fixed · `-` removed
 
 ---
 
+## Unreleased
+
+```diff
++ [FEATURE] client.post.library: track(track_id), playlist(name, description, is_public), playlist_track(playlist_id, track_id)
++ [FEATURE] client.put.library: playlist(playlist_id, name, description, is_public) (only given fields are sent), reorder(playlist_id, track_ids)
++ [FEATURE] client.delete.library: track, album, artist, playlist, playlist_track
++ [TEST] Tests for every new POST / PUT / DELETE method
++ [DOC] README: POST / PUT / DELETE sections
+
+~ [CHANGE] client.post.track(data) and client.delete.track(id) kept as compatibility shortcuts
+```
+
 ## Ver 0.9.1 - Sep 23, 2026
 
 ```diff

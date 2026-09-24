@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import pytest
 
-from VoltaLibPython.exceptions import APIError
+from VoltaLibPython.exceptions import APIError, NotFoundError
 
 from .conftest import FakeResponse
 
@@ -79,3 +79,33 @@ class TestDelete:
 
         _, _, _, payload = fake_session.calls[0]
         assert payload is None
+
+class TestDeleteLibrary:
+    @pytest.mark.parametrize(
+        "method, args, path",
+        [
+            ("track", ("t1",), "/api/v1/library/tracks/t1"),
+            ("album", ("al1",), "/api/v1/library/albums/al1"),
+            ("artist", ("a1",), "/api/v1/library/artists/a1"),
+            ("playlist", ("pl1",), "/api/v1/library/playlists/pl1"),
+            ("playlist_track", ("pl1", "t1"), "/api/v1/library/playlists/pl1/tracks/t1"),
+        ],
+    )
+    def test_hits_expected_url_without_body(self, make_client, fake_session, method, args, path):
+        client = make_client()
+        fake_session.delete_responses.append(FakeResponse(200, {"deleted": True}))
+
+        result = getattr(client.delete.library, method)(*args)
+
+        assert result == {"deleted": True}
+        verb, url, _, payload = fake_session.calls[0]
+        assert verb == "DELETE"
+        assert url.endswith(path)
+        assert payload is None
+
+    def test_404_raises_not_found(self, make_client, fake_session):
+        client = make_client()
+        fake_session.delete_responses.append(FakeResponse(404, {"detail": "playlist not found"}))
+
+        with pytest.raises(NotFoundError):
+            client.delete.library.playlist("unknown")

@@ -6,6 +6,18 @@ Legend: `+` added · `~` changed / fixed · `-` removed
 
 ---
 
+## Ver 1.1.2 - Sep 24, 2026
+
+```diff
++ [FEATURE] Spinner falls back to ASCII frames (| / - \) when the terminal can't display braille (e.g. Windows cp1252 console)
++ [TEST] tests/test_progress.py covering the spinner
+
+~ [PERF] Spinner no longer adds ~100 ms to every request run in a terminal: the thread now wakes up instantly when the request ends instead of finishing a sleep()
+~ [CHANGE] Spinner writes to stderr instead of stdout, so piped / redirected program output stays clean
+~ [FIX] Spinner no longer crashes when stdout / stderr is None (pythonw) or closed
+~ [FIX] Spinner only clears the line if it actually displayed something
+```
+
 ## Ver 1.1.1 - Sep 24, 2026
 
 ```diff

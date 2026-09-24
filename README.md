@@ -27,7 +27,7 @@ pip install git+https://github.com/VoltaMusic/Volta.py.git
 
 ```bash
 python -m build
-pip install dist/voltalib-1.1.1-py3-none-any.whl
+pip install dist/voltalib-1.1.2-py3-none-any.whl
 ```
 
 ---
@@ -276,6 +276,7 @@ tests/
 ├── test_put.py                # library.playlist / reorder + generic request
 ├── test_delete.py             # library.track / album / artist / playlist / playlist_track
 ├── test_exceptions.py         # every exception: HTTP codes, network, invalid responses, token file, arguments
+├── test_progress.py           # spinner: no added latency, stderr only, ASCII fallback
 └── test_client_lifecycle.py   # token loading/saving, context manager, thread-safety
 ```
 

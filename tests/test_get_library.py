@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import pytest
 
-from VoltaLibPython.exceptions import APIError
+from VoltaLibPython.exceptions import APIError, InvalidResponseError
 
 from .conftest import FakeResponse
 
@@ -69,18 +69,25 @@ class TestLibraryTracks:
 
         assert result == [{"id": "t1", "title": "Discovery"}]
 
-    def test_tracks_search_on_non_list_result_returns_empty_list(self, make_client, fake_session):
-        """Comportement actuel documenté : si l'API renvoie autre chose qu'une
-        liste (ex: un dict d'erreur ou un objet unique) alors qu'un `search`
-        est demandé, la méthode renvoie silencieusement une liste vide plutôt
-        que de lever une erreur ou de renvoyer la donnée brute. À garder en
-        tête si l'API peut renvoyer une forme différente d'une liste."""
+    def test_tracks_search_on_non_list_result_raises(self, make_client, fake_session):
+        """Si l'API renvoie autre chose qu'une liste alors qu'un `search` est
+        demandé, la méthode lève InvalidResponseError au lieu de renvoyer
+        une liste vide qui ferait croire à tort qu'il n'y a aucun résultat."""
         client = make_client()
         fake_session.get_responses.append(FakeResponse(200, {"unexpected": "shape"}))
 
-        result = client.get.library.tracks(search="disco")
+        with pytest.raises(InvalidResponseError, match="dict") as exc:
+            client.get.library.tracks(search="disco")
 
-        assert result == []
+        assert "unexpected" in str(exc.value)
+
+    @pytest.mark.parametrize("method", ["tracks", "albums", "artists", "playlists"])
+    def test_non_list_without_search_is_returned_as_is(self, make_client, fake_session, method):
+        # Sans `search`, rien n'est filtré : la réponse brute est renvoyée.
+        client = make_client()
+        fake_session.get_responses.append(FakeResponse(200, {"unexpected": "shape"}))
+
+        assert getattr(client.get.library, method)() == {"unexpected": "shape"}
 
 
 # ---------------------------------------------------------------------------

@@ -6,6 +6,17 @@ Legend: `+` added · `~` changed / fixed · `-` removed
 
 ---
 
+## Ver 1.0.1 - Sep 24, 2026
+
+```diff
++ [CI] Publish workflow cleans dist/ and build/ before building, then checks dist/ holds exactly one wheel and one tarball
+
+~ [DOC] README: install from a local build (python -m build) instead of a committed wheel
+~ [CI] Publish workflow comments rewritten in French
+
+- [BUILD] dist/ no longer tracked in git (added to .gitignore)
+```
+
 ## Ver 1.0.0 - Sep 24, 2026
 
 ```diff

@@ -178,8 +178,6 @@ with VoltaClient() as client:
 client.delete.request("/api/v1/some/other/endpoint")
 ```
 
-> The older shortcuts `client.post.track({...})` and `client.delete.track(id)` still work, but `client.post.library` / `client.delete.library` are preferred.
-
 ---
 
 ## 🚨 Error handling

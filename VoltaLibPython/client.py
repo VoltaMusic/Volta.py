@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import atexit
 import contextlib
 import json
 import logging
@@ -64,6 +65,10 @@ class VoltaClient:
         self.refresh_interval: int = int(self.token_data.get("expires_in", 3600))
 
         self._start_background_refresh()
+        # Filet de sécurité si le client n'est ni utilisé avec `with` ni
+        # fermé à la main : le temps restant du token est quand même
+        # sauvegardé à la fin du programme.
+        atexit.register(self.close)
 
         self.get = Get(self)
         self.post = Post(self)
@@ -181,7 +186,7 @@ class VoltaClient:
 
     def stop_background_refresh(self) -> None:
         if self._closed:
-            return  # déjà arrêté (évite une double sauvegarde via atexit + __exit__)
+            return  # déjà arrêté (évite une double sauvegarde, ex. close() puis __exit__)
         self._closed = True
         if self._refresh_timer is not None:
             self._refresh_timer.cancel()
@@ -192,6 +197,7 @@ class VoltaClient:
         """Arrête le rafraîchissement automatique, sauvegarde le temps
         restant du token et ferme la session HTTP. Peut être appelée
         plusieurs fois sans effet de bord."""
+        atexit.unregister(self.close)  # plus rien à faire à la sortie du programme
         self.stop_background_refresh()
         self._session.close()
 

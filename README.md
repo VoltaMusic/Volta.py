@@ -63,7 +63,7 @@ with VoltaClient() as client:
 
 Using the context manager (`with ... as client:`) is the recommended way to use `VoltaClient` — it makes sure the background refresh thread stops cleanly and the remaining token time gets saved when you're done.
 
-If you don't use a context manager, call `client.close()` yourself when you're done: it stops the refresh thread, saves the remaining token time and closes the HTTP session.
+If you don't use a context manager, call `client.close()` yourself when you're done: it stops the refresh thread, saves the remaining token time and closes the HTTP session. If you forget, it is called automatically when your program exits.
 
 To see a small loading spinner (on stderr) while a slow request is running, pass `show_progress=True`:
 

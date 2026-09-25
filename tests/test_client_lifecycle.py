@@ -193,3 +193,33 @@ class TestClose:
         client = make_client()
         client.close()
         client.close()  # ne doit pas planter
+
+
+class TestAtexit:
+    def test_client_is_closed_at_program_exit(self, tmp_path):
+        import os
+        import subprocess
+        import sys
+
+        token_file = tmp_path / "token.json"
+        token_file.write_text(json.dumps({"access_token": "tok", "expires_in": 3600}))
+        # Client jamais fermé : atexit doit sauvegarder le temps restant.
+        code = (
+            "from VoltaLibPython import VoltaClient; "
+            f"VoltaClient(token_file={str(token_file)!r}, client_id='id', client_secret='secret')"
+        )
+        env = {**os.environ, "PYTHONPATH": os.getcwd()}
+        subprocess.run([sys.executable, "-c", code], cwd=tmp_path, env=env, check=True)
+
+        saved = json.loads(token_file.read_text())
+        assert saved["access_token"] == "tok"
+        assert 3590 <= saved["expires_in"] < 3600  # réécrit avec le temps restant (entier, arrondi vers le bas)
+
+    def test_close_unregisters_atexit_hook(self, make_client, monkeypatch):
+        import atexit
+
+        unregistered = []
+        monkeypatch.setattr(atexit, "unregister", lambda func: unregistered.append(func))
+        client = make_client()
+        client.close()
+        assert unregistered == [client.close]

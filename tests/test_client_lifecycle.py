@@ -10,6 +10,9 @@ Lancer avec : pytest tests/test_client_lifecycle.py -v
 from __future__ import annotations
 
 import json
+import os
+import textwrap
+import time
 
 import pytest
 
@@ -30,7 +33,8 @@ class TestTokenLoading:
         client._session = fake_session
         try:
             assert client.token == "from_disk"
-            assert client.refresh_interval == 1200
+            # Ancien format sans expires_at : échéance = date du fichier + expires_in.
+            assert 1190 <= client.refresh_interval <= 1200
             # Aucun appel réseau n'a dû être fait pour charger un token déjà présent.
             assert fake_session.calls == []
         finally:
@@ -73,17 +77,80 @@ class TestTokenLoading:
         assert session.calls == []
 
 
-class TestSaveRemainingTime:
-    def test_stop_background_refresh_saves_remaining_time(self, make_client, tmp_path):
-        client = make_client({"access_token": "tok", "expires_in": 3600})
-        token_file = tmp_path / "token.json"
+def _client_with_session(tmp_path, monkeypatch, token_file, *responses):
+    from tests.conftest import FakeSession
 
-        client.stop_background_refresh()
+    session = FakeSession()
+    session.post_responses.extend(responses)
+    monkeypatch.setattr("VoltaLibPython.client._build_session", lambda: session)
+    return VoltaClient(token_file=str(token_file)), session
+
+
+class TestTokenExpiry:
+    def test_refreshed_token_is_saved_with_absolute_expiry(self, tmp_path, monkeypatch):
+        token_file = tmp_path / "token.json"
+        before = time.time()
+        client, _ = _client_with_session(
+            tmp_path, monkeypatch, token_file, FakeResponse(200, {"access_token": "new", "expires_in": 3600})
+        )
+        client.close()
 
         saved = json.loads(token_file.read_text())
-        # Quelques millisecondes se sont écoulées entre la création et l'arrêt :
-        # on attend une valeur légèrement inférieure à 3600, jamais négative.
-        assert 3590 <= saved["expires_in"] <= 3600
+        assert int(before) + 3600 <= saved["expires_at"] <= time.time() + 3600
+
+    def test_valid_token_file_is_reused_without_network_call(self, tmp_path, monkeypatch):
+        token_file = tmp_path / "token.json"
+        token_file.write_text(json.dumps(
+            {"access_token": "on_disk", "expires_in": 3600, "expires_at": time.time() + 600}
+        ))
+        client, session = _client_with_session(tmp_path, monkeypatch, token_file)
+        try:
+            assert client.token == "on_disk"
+            assert 590 <= client.refresh_interval <= 600
+            assert session.calls == []
+        finally:
+            client.close()
+
+    def test_expired_token_file_triggers_refresh(self, tmp_path, monkeypatch):
+        token_file = tmp_path / "token.json"
+        token_file.write_text(json.dumps(
+            {"access_token": "stale", "expires_in": 3600, "expires_at": time.time() - 60}
+        ))
+        client, session = _client_with_session(
+            tmp_path, monkeypatch, token_file, FakeResponse(200, {"access_token": "fresh", "expires_in": 3600})
+        )
+        try:
+            assert client.token == "fresh"
+            assert len(session.calls) == 1
+        finally:
+            client.close()
+
+    def test_legacy_file_older_than_its_expires_in_triggers_refresh(self, tmp_path, monkeypatch):
+        # Ancien format : expires_in relatif, écrit il y a 2 h. Le jeton est
+        # périmé même si expires_in vaut encore 3600.
+        token_file = tmp_path / "token.json"
+        token_file.write_text(json.dumps({"access_token": "stale", "expires_in": 3600}))
+        two_hours_ago = time.time() - 7200
+        os.utime(token_file, (two_hours_ago, two_hours_ago))
+
+        client, session = _client_with_session(
+            tmp_path, monkeypatch, token_file, FakeResponse(200, {"access_token": "fresh", "expires_in": 3600})
+        )
+        try:
+            assert client.token == "fresh"
+        finally:
+            client.close()
+
+    def test_close_does_not_rewrite_token_file(self, tmp_path, monkeypatch):
+        token_file = tmp_path / "token.json"
+        content = json.dumps({"access_token": "tok", "expires_in": 3600, "expires_at": time.time() + 3600})
+        token_file.write_text(content)
+        client, _ = _client_with_session(tmp_path, monkeypatch, token_file)
+        client.close()
+        assert token_file.read_text() == content
+
+
+class TestStop:
 
     def test_stop_background_refresh_is_idempotent(self, make_client):
         client = make_client()
@@ -203,17 +270,21 @@ class TestAtexit:
 
         token_file = tmp_path / "token.json"
         token_file.write_text(json.dumps({"access_token": "tok", "expires_in": 3600}))
-        # Client jamais fermé : atexit doit sauvegarder le temps restant.
-        code = (
-            "from VoltaLibPython import VoltaClient; "
-            f"VoltaClient(token_file={str(token_file)!r}, client_id='id', client_secret='secret')"
-        )
+        # Client jamais fermé : atexit doit appeler close().
+        code = textwrap.dedent(f"""
+            from VoltaLibPython import VoltaClient
+            original = VoltaClient.close
+            def close(self):
+                print('closed')
+                original(self)
+            VoltaClient.close = close
+            VoltaClient(token_file={str(token_file)!r}, client_id='id', client_secret='secret')
+        """)
         env = {**os.environ, "PYTHONPATH": os.getcwd()}
-        subprocess.run([sys.executable, "-c", code], cwd=tmp_path, env=env, check=True)
-
-        saved = json.loads(token_file.read_text())
-        assert saved["access_token"] == "tok"
-        assert 3590 <= saved["expires_in"] < 3600  # réécrit avec le temps restant (entier, arrondi vers le bas)
+        out = subprocess.run(
+            [sys.executable, "-c", code], cwd=tmp_path, env=env, capture_output=True, text=True, check=True
+        )
+        assert out.stdout.strip() == "closed"
 
     def test_close_unregisters_atexit_hook(self, make_client, monkeypatch):
         import atexit

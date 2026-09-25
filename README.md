@@ -10,7 +10,7 @@ A lightweight Python client for the [Volta Music](https://volta-music.com) publi
 - ♻️ **Silent retry on `401`** — if your token goes stale mid-request, the client refreshes it and retries once, transparently.
 - 🧵 **Background auto-refresh** — a daemon thread keeps your token alive for the lifetime of the client.
 - 🎯 **Typed exceptions** — catch `NotFoundError`, `AuthenticationError`, `RateLimitError`, etc. instead of parsing status codes yourself.
-- 🧹 **Clean shutdown** — use it as a context manager and it saves remaining token time + closes its session automatically.
+- 🧹 **Clean shutdown** — use it as a context manager and it stops the refresh thread and closes its session automatically.
 - 🔍 **Client-side search helpers** — filter your liked tracks/albums/artists/playlists by name without extra API calls.
 
 ---
@@ -61,9 +61,9 @@ with VoltaClient() as client:
     print(tracks)
 ```
 
-Using the context manager (`with ... as client:`) is the recommended way to use `VoltaClient` — it makes sure the background refresh thread stops cleanly and the remaining token time gets saved when you're done.
+Using the context manager (`with ... as client:`) is the recommended way to use `VoltaClient` — it makes sure the background refresh thread stops and the HTTP session is closed when you're done.
 
-If you don't use a context manager, call `client.close()` yourself when you're done: it stops the refresh thread, saves the remaining token time and closes the HTTP session. If you forget, it is called automatically when your program exits.
+If you don't use a context manager, call `client.close()` yourself when you're done: it stops the refresh thread and closes the HTTP session. If you forget, it is called automatically when your program exits.
 
 To see a small loading spinner (on stderr) while a slow request is running, pass `show_progress=True`:
 
@@ -270,7 +270,7 @@ Catch `VoltaAPIExceptions` alone to handle every error the library can raise.
 - On first use, if no token file exists yet, the client fetches one via `client_credentials` and saves it to `config/token.json` (configurable via `token_file=` in `VoltaClient(...)`).
 - A background thread refreshes the token shortly before it expires — no request ever waits on this.
 - If the API rejects a request with `401` (token invalid sooner than expected), the client refreshes immediately and retries **once**, silently.
-- On `close()` (called automatically by the context manager, or manually), the real remaining time is written back to the token file — so restarting your program soon after doesn't waste a perfectly valid token.
+- The token file stores the absolute expiry time (`expires_at`, a Unix timestamp). A program restarted later reuses the token only if it is still valid, and fetches a new one otherwise — no wasted token, no stale token sent to the API.
 
 ---
 

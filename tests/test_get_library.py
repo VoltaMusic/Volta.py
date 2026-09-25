@@ -8,10 +8,9 @@ from __future__ import annotations
 
 import pytest
 
-from VoltaLibPython.exceptions import APIError, InvalidResponseError
+from VoltaLibPython.exceptions import InvalidResponseError
 
 from .conftest import FakeResponse
-
 
 # ---------------------------------------------------------------------------
 # tracks()

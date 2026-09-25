@@ -13,6 +13,7 @@ from typing import Any, Optional
 import requests
 from dotenv import load_dotenv
 
+from .endpoints.verbs import Delete, Get, Post, Put
 from .exceptions import (
     ConfigurationError,
     ConnectionFailedError,
@@ -22,15 +23,14 @@ from .exceptions import (
     TokenStorageError,
     error_from_response,
 )
+from .progress import _Spinner
 from .session import (
-    _build_session,
-    _mount_token_retry,
     DEFAULT_TIMEOUT,
     TOKEN_ENDPOINT,
     TOKEN_REFRESH_MARGIN,
+    _build_session,
+    _mount_token_retry,
 )
-from .progress import _Spinner
-from .endpoints.verbs import Get, Post, Put, Delete
 
 logger = logging.getLogger(__name__)
 

@@ -279,11 +279,13 @@ Catch `VoltaAPIExceptions` alone to handle every error the library can raise.
 The test suite uses `pytest` with a fully mocked HTTP layer — no real network calls, no real credentials needed.
 
 ```bash
-pip install pytest
-pytest
+pip install -e ".[dev]"   # the package + pytest, ruff, mypy
+pytest                    # tests
+ruff check .              # lint
+mypy                      # type check
 ```
 
-To run the lint and the tests on every supported Python version (3.10 → 3.13), like the CI does, use the matrix scripts. They need [uv](https://docs.astral.sh/uv/) (`pip install uv`), which downloads the missing Python versions and uses a temporary environment per version:
+To run the lint, the type check and the tests on every supported Python version (3.10 → 3.13), like the CI does, use the matrix scripts. They need [uv](https://docs.astral.sh/uv/) (`pip install uv`), which downloads the missing Python versions and uses a temporary environment per version:
 
 ```bash
 scripts/test_matrix.sh            # Linux / macOS / Git Bash
@@ -291,8 +293,8 @@ scripts/test_matrix.sh 3.12 3.13  # only some versions
 ```
 
 ```bat
-scripts	est_matrix.bat           :: Windows (cmd / PowerShell)
-scripts	est_matrix.bat 3.12 3.13
+scripts\test_matrix.bat           :: Windows (cmd / PowerShell)
+scripts\test_matrix.bat 3.12 3.13
 ```
 
 On GitHub, the same matrix runs on every push and pull request to `main`, and can be started by hand from the **Actions** tab (**Python application** → **Run workflow**).

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Lance le lint et les tests sur chaque version de Python supportée, comme le CI.
+# Lance le lint (ruff), le typage (mypy) et les tests sur chaque version de Python supportée, comme le CI.
 #
 # Usage :
 #   scripts/test_matrix.sh              # 3.10, 3.11, 3.12 et 3.13
@@ -32,8 +32,9 @@ fi
 failed=()
 for version in "${VERSIONS[@]}"; do
 	echo "=== Python ${version}"
-	run=("$UV" run -q --no-project --python "$version" --with pytest --with flake8 --with-requirements requirements.txt --)
-	if "${run[@]}" python -m flake8 . --exclude=.venv,build,dist --count --select=E9,F63,F7,F82 --show-source --statistics \
+	run=("$UV" run -q --no-project --python "$version" --with-editable .[dev] --)
+	if "${run[@]}" python -m ruff check . \
+		&& "${run[@]}" python -m mypy \
 		&& "${run[@]}" python -m pytest -q -p no:cacheprovider; then
 		echo "--> Python ${version} : OK"
 	else

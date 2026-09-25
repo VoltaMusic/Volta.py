@@ -22,6 +22,10 @@ Legend: `+` added · `~` changed / fixed · `-` removed
 ~ [CHANGE] The token file is created readable by the current user only (0600)
 ~ [CHANGE] Every error message, log message and public docstring is now in English (they used to mix French and English)
 ~ [DEV] Endpoint classes share an _Endpoint base: routes are built with self._path("playlists", playlist_id, "tracks"), which encodes every segment, instead of repeated f-strings
+~ [CI] The CI installs the package itself (pip install -e ".[dev]") instead of requirements.txt, lints with ruff instead of flake8 (whose second pass never failed the build), type-checks with mypy and reports test coverage; scripts/test_matrix.sh / .bat do the same
+~ [BUILD] The dev extra adds pytest-cov, ruff, mypy and types-requests; ruff and mypy are configured in pyproject.toml
+~ [FIX] library tracks() / albums() / artists() / playlists(): search and id are typed Optional[str]
+~ [DOC] README: scripts\test_matrix.bat was printed with a tab instead of \t
 ~ [FIX] post.library.track() and post.library.playlist_track() now send the track object the API requires (id, name, artist, album, plus artist_id / album_id / cover_url / duration_ms when known) instead of {"track_id": ...}, which the API rejected with a 422
 ~ [CHANGE] post.library.track(track) and post.library.playlist_track(playlist_id, track) take the whole track dict (from get.library.tracks(), get.catalog.track() or search()), not just its ID; passing only an ID raises InvalidArgumentError with an explanation
 ~ [FIX] post.library.playlist(description=...) : the API ignores the description on creation, so it is now set right after with a PUT

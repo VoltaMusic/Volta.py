@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-from typing import Any, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Optional
 
-from .library import Library
 from .catalog import Catalog
-from .library_write import LibraryPost, LibraryPut, LibraryDelete
+from .library import Library
+from .library_write import LibraryDelete, LibraryPost, LibraryPut
 
 if TYPE_CHECKING:
     from ..client import VoltaClient

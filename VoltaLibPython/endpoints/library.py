@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import unicodedata
-from typing import Any
+from typing import Any, Optional
 
 from ..exceptions import InvalidArgumentError, InvalidResponseError
 from ._base import _Endpoint
@@ -37,7 +37,7 @@ def _filter(result: Any, key: str, search: str) -> list[Any]:
 class Library(_Endpoint):
     endpoint = "/api/v1/library"
 
-    def tracks(self, search: str = None) -> Any:
+    def tracks(self, search: Optional[str] = None) -> Any:
         """
         Get all liked tracks.
 
@@ -51,7 +51,7 @@ class Library(_Endpoint):
         if search:
             return _filter(result, "title", search)
         return result
-    def albums(self, search: str = None) -> Any:
+    def albums(self, search: Optional[str] = None) -> Any:
         """
         Get all liked albums.
 
@@ -65,7 +65,7 @@ class Library(_Endpoint):
         if search:
             return _filter(result, "title", search)
         return result
-    def artists(self, search: str = None) -> Any:
+    def artists(self, search: Optional[str] = None) -> Any:
         """
         Get all liked artists.
 
@@ -95,7 +95,7 @@ class Library(_Endpoint):
             id (str): The ID of the artist.
         """
         return self.client._get(self._path("artists", id, "tracks"))
-    def playlists(self, search: str = None, id: str = None) -> Any:
+    def playlists(self, search: Optional[str] = None, id: Optional[str] = None) -> Any:
         """
         Get all liked playlists or a specific playlist by ID.
 

@@ -82,3 +82,25 @@ class TestSpinner:
             with spinner:
                 raise RuntimeError("boom")
         assert not spinner._thread.is_alive()
+
+
+class _BrokenStream(FakeTerminal):
+    """Terminal qui se ferme en cours de route."""
+
+    def write(self, text):
+        raise OSError("terminal closed")
+
+
+class TestStreamErrors:
+    @pytest.mark.parametrize("stream", [None, object()])
+    def test_stream_without_isatty_is_not_a_terminal(self, stream):
+        assert progress._is_terminal(stream) is False
+
+    def test_closed_stream_is_not_a_terminal(self):
+        stream = io.StringIO()
+        stream.close()  # isatty() sur un flux fermé lève ValueError
+        assert progress._is_terminal(stream) is False
+
+    def test_write_error_is_ignored(self, fast_spinner):
+        with _Spinner("Loading", stream=_BrokenStream()):
+            time.sleep(0.1)  # le spinner essaie d'écrire, sans jamais faire planter la requête

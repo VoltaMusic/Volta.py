@@ -296,7 +296,7 @@ class VoltaClient:
         return self._request("DELETE", endpoint, data=data)
 
 
-def _default_token_file(client_id: Optional[str]) -> str:
+def _default_token_file(client_id: Optional[str], os_name: str = os.name) -> str:
     """Emplacement par défaut du fichier de token : le dossier cache de
     l'utilisateur, indépendant du dossier courant et hors de tout dépôt git.
 
@@ -306,7 +306,7 @@ def _default_token_file(client_id: Optional[str]) -> str:
     Le nom dépend de l'ID client : deux clés API différentes n'écrasent
     jamais le jeton l'une de l'autre.
     """
-    if os.name == "nt":
+    if os_name == "nt":
         base = os.getenv("LOCALAPPDATA") or os.path.join(os.path.expanduser("~"), "AppData", "Local")
     else:
         base = os.getenv("XDG_CACHE_HOME") or os.path.join(os.path.expanduser("~"), ".cache")

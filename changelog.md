@@ -6,6 +6,15 @@ Legend: `+` added · `~` changed / fixed · `-` removed
 
 ---
 
+## Unreleased
+
+```diff
++ [TEST] Tests for the background token refresh (success, failure retried in 30 s, no reschedule after close), token endpoint errors (401 / 400 / 5xx), token file write failures, 204 responses without a body, the spinner around requests, client.get.request(), every exception message and detail format, Retry-After parsing and spinner stream errors
+
+~ [TEST] test_unwritable_token_file_raises_token_storage_error renamed to test_unreadable_...: it was testing the token file read, not the write
+~ [DEV] _default_token_file() takes an os_name argument, so the Windows and Linux / macOS paths are both tested on every OS
+```
+
 ## Ver 1.5.0 - Sep 25, 2026
 
 ```diff

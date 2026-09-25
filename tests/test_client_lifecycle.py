@@ -337,3 +337,142 @@ class TestDefaultTokenFile:
         )
         client.close()
         assert os.stat(token_file).st_mode & 0o777 == 0o600
+
+
+class TestBackgroundRefresh:
+    """`_background_refresh_tick` est appelé directement : pas besoin
+    d'attendre le timer."""
+
+    def test_tick_installs_the_new_token_and_reschedules(self, make_client, fake_session):
+        client = make_client({"access_token": "old", "expires_in": 3600})
+        old_timer = client._refresh_timer
+        fake_session.post_responses.append(FakeResponse(200, {"access_token": "new", "expires_in": 1800}))
+
+        client._background_refresh_tick()
+
+        assert client.token == "new"
+        assert 1790 <= client.refresh_interval <= 1800
+        assert client._refresh_timer is not old_timer  # reprogrammé sur la nouvelle échéance
+
+    def test_tick_failure_keeps_old_token_and_retries_in_30s(self, make_client, fake_session, caplog):
+        client = make_client({"access_token": "old", "expires_in": 3600})
+        fake_session.post_responses.append(FakeResponse(503, {"detail": "down"}))
+
+        client._background_refresh_tick()  # ne doit pas lever : on est dans un thread
+
+        assert client.token == "old"
+        assert client.refresh_interval == 30
+        assert "Token refresh failed" in caplog.text
+
+    def test_tick_after_close_does_not_reschedule(self, make_client, fake_session):
+        client = make_client()
+        client.close()
+        fake_session.post_responses.append(FakeResponse(200, {"access_token": "new", "expires_in": 3600}))
+
+        client._background_refresh_tick()
+
+        assert client._refresh_timer is None
+
+
+class TestTokenEndpointErrors:
+    @pytest.mark.parametrize("status, error", [
+        (401, "AuthenticationError"),
+        (400, "BadRequestError"),
+        (503, "ServerError"),
+    ])
+    def test_token_endpoint_error_raises_typed_exception(self, tmp_path, monkeypatch, status, error):
+        import VoltaLibPython
+
+        with pytest.raises(getattr(VoltaLibPython, error), match="Token refresh failed") as exc:
+            _client_with_session(
+                tmp_path, monkeypatch, tmp_path / "token.json",
+                FakeResponse(status, {"detail": "invalid_client"}),
+            )
+        assert exc.value.status_code == status
+        assert exc.value.detail == "invalid_client"
+        assert not (tmp_path / "token.json").exists()
+
+
+class TestTokenFileWrite:
+    def test_write_failure_raises_token_storage_error(self, tmp_path, monkeypatch):
+        from VoltaLibPython import TokenStorageError
+
+        # Le dossier parent est en réalité un fichier : impossible de créer le fichier de token.
+        (tmp_path / "not_a_dir").write_text("")
+        token_file = tmp_path / "not_a_dir" / "token.json"
+
+        with pytest.raises(TokenStorageError, match="Cannot write") as exc:
+            _client_with_session(
+                tmp_path, monkeypatch, token_file, FakeResponse(200, {"access_token": "tok", "expires_in": 3600})
+            )
+        assert exc.value.path == str(token_file)
+        assert isinstance(exc.value.__cause__, OSError)
+
+    def test_token_file_without_directory_is_written_in_current_folder(self, tmp_path, monkeypatch):
+        monkeypatch.chdir(tmp_path)
+        client, _ = _client_with_session(
+            tmp_path, monkeypatch, "token.json", FakeResponse(200, {"access_token": "tok", "expires_in": 3600})
+        )
+        client.close()
+        assert json.loads((tmp_path / "token.json").read_text())["access_token"] == "tok"
+
+
+class TestDefaultTokenFileByPlatform:
+    def test_windows_uses_localappdata(self, monkeypatch, tmp_path):
+        from VoltaLibPython.client import _default_token_file
+
+        monkeypatch.setenv("LOCALAPPDATA", str(tmp_path))
+        assert _default_token_file("id", os_name="nt").startswith(os.path.join(str(tmp_path), "voltalib"))
+
+    def test_other_systems_use_xdg_cache_home(self, monkeypatch, tmp_path):
+        from VoltaLibPython.client import _default_token_file
+
+        monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path))
+        assert _default_token_file("id", os_name="posix").startswith(os.path.join(str(tmp_path), "voltalib"))
+
+    def test_falls_back_to_home_folder(self, monkeypatch):
+        from VoltaLibPython.client import _default_token_file
+
+        monkeypatch.delenv("LOCALAPPDATA", raising=False)
+        monkeypatch.delenv("XDG_CACHE_HOME", raising=False)
+        home = os.path.expanduser("~")
+        assert _default_token_file("id", os_name="nt").startswith(os.path.join(home, "AppData", "Local", "voltalib"))
+        assert _default_token_file("id", os_name="posix").startswith(os.path.join(home, ".cache", "voltalib"))
+
+
+class _NoContentResponse(FakeResponse):
+    def json(self):
+        raise ValueError("Expecting value")
+
+
+class TestResponses:
+    def test_2xx_without_json_body_returns_text(self, make_client, fake_session):
+        # Ex. un DELETE qui répond 204 No Content.
+        client = make_client()
+        response = _NoContentResponse(204)
+        response.text = ""  # FakeResponse remplace un texte vide par le JSON sérialisé
+        fake_session.delete_responses.append(response)
+
+        assert client.delete.library.track("t1") == ""
+
+    def test_show_progress_wraps_requests_in_a_spinner(self, make_client, fake_session, monkeypatch):
+        entered = []
+
+        class RecordingSpinner:
+            def __init__(self, message):
+                entered.append(message)
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *exc_info):
+                return None
+
+        monkeypatch.setattr("VoltaLibPython.client._Spinner", RecordingSpinner)
+        client = make_client()
+        client.show_progress = True
+        fake_session.get_responses.append(FakeResponse(200, {"ok": True}))
+
+        client.get.catalog.home()
+
+        assert entered == ["GET /api/v1/home"]

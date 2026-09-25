@@ -44,11 +44,11 @@ def _track_payload(track: Any) -> dict[str, Any]:
     """
     if isinstance(track, str):
         raise InvalidArgumentError(
-            "passe le titre complet (le dict renvoyé par get.library.tracks(), get.catalog.track()...), "
-            "pas seulement son ID : l'API exige aussi son nom, son artiste et son album"
+            "pass the whole track (the dict returned by get.library.tracks(), get.catalog.track()...), "
+            "not just its ID: the API also needs its name, artist and album"
         )
     if not isinstance(track, Mapping):
-        raise InvalidArgumentError(f"titre invalide : un dict est attendu, pas {type(track).__name__}")
+        raise InvalidArgumentError(f"invalid track: a dict is expected, not {type(track).__name__}")
 
     album = track.get("album")
     album_obj = album if isinstance(album, Mapping) else {}
@@ -65,7 +65,7 @@ def _track_payload(track: Any) -> dict[str, Any]:
     }
     missing = [key for key, value in payload.items() if not value]
     if missing:
-        raise InvalidArgumentError(f"titre incomplet, champ(s) manquant(s) : {', '.join(missing)}")
+        raise InvalidArgumentError(f"incomplete track, missing field(s): {', '.join(missing)}")
     payload["id"] = str(payload["id"])
 
     optional = {
@@ -109,7 +109,7 @@ class LibraryPost:
             is_public (bool, optional): Whether the playlist is public. Defaults to None (server default).
         """
         if not name:
-            raise InvalidArgumentError("`name` est obligatoire pour créer une playlist")
+            raise InvalidArgumentError("`name` is required to create a playlist")
         created = self.client._post(f"{self.endpoint}/playlists", _playlist_fields(name, description, is_public))
         # L'API ignore la description à la création (elle revient à null) mais
         # l'accepte en modification : on la pose juste après si besoin.
@@ -166,7 +166,7 @@ class LibraryPut:
         """
         fields = _playlist_fields(name, description, is_public)
         if not fields:
-            raise InvalidArgumentError("indique au moins un champ à modifier : `name`, `description` ou `is_public`")
+            raise InvalidArgumentError("give at least one field to update: `name`, `description` or `is_public`")
         return self.client._put(f"{self.endpoint}/playlists/{segment(playlist_id)}", fields)
     def reorder(self, playlist_id: str, track_ids: list[str]) -> Any:
         """

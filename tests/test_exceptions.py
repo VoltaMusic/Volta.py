@@ -92,7 +92,7 @@ class TestHttpErrors:
         with pytest.raises(UnprocessableEntityError) as exc:
             client.post.library.playlist("x")
 
-        assert exc.value.detail == "track_id : field required ; name : too long"
+        assert exc.value.detail == "track_id: field required; name: too long"
         assert "[422]" in str(exc.value)
 
     def test_429_exposes_retry_after(self, make_client, fake_session):
@@ -200,7 +200,7 @@ class TestInvalidTokenResponse:
         return VoltaClient(token_file=str(tmp_path / "token.json"))
 
     def test_non_json_token_response(self, tmp_path, monkeypatch):
-        with pytest.raises(InvalidResponseError, match="pas du JSON") as exc:
+        with pytest.raises(InvalidResponseError, match="not JSON") as exc:
             self._client_with_token_response(
                 tmp_path, monkeypatch, _NotJsonResponse(200, text="<html>maintenance</html>")
             )

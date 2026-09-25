@@ -240,8 +240,8 @@ The original low-level exception is always kept as `e.__cause__`.
 Printing an exception gives a readable message, with the details on the next line:
 
 ```
-[422] Requête vers https://api.volta-music.com/api/v1/library/playlists échouée : Données envoyées refusées par l'API
-  -> name : field required
+[422] Request to https://api.volta-music.com/api/v1/library/playlists failed: Data rejected by the API
+  -> name: field required
 ```
 
 ```python

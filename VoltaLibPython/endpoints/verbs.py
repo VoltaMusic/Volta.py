@@ -11,8 +11,8 @@ if TYPE_CHECKING:
 
 
 class Get:
-    """Espace de noms pour les requêtes GET. Utilise le client parent,
-    ne crée jamais de nouvelle instance de VoltaClient."""
+    """Namespace for GET requests. Uses the parent client, never creates
+    a new VoltaClient."""
 
     def __init__(self, client: "VoltaClient") -> None:
         self.client = client
@@ -24,7 +24,7 @@ class Get:
 
 
 class Post:
-    """Espace de noms pour les requêtes POST."""
+    """Namespace for POST requests."""
 
     def __init__(self, client: "VoltaClient") -> None:
         self.client = client
@@ -35,7 +35,7 @@ class Post:
 
 
 class Put:
-    """Espace de noms pour les requêtes PUT."""
+    """Namespace for PUT requests."""
 
     def __init__(self, client: "VoltaClient") -> None:
         self.client = client
@@ -46,7 +46,7 @@ class Put:
 
 
 class Delete:
-    """Espace de noms pour les requêtes DELETE."""
+    """Namespace for DELETE requests."""
 
     def __init__(self, client: "VoltaClient") -> None:
         self.client = client

@@ -147,7 +147,7 @@ class TestTrackPayload:
     def test_id_alone_raises_with_explanation(self, make_client, fake_session):
         client = make_client()
 
-        with pytest.raises(InvalidArgumentError, match="titre complet"):
+        with pytest.raises(InvalidArgumentError, match="whole track"):
             client.post.library.track("89629777")
 
         assert fake_session.calls == []

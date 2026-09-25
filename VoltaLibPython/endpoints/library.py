@@ -27,7 +27,7 @@ def _filter(result: Any, key: str, search: str) -> list[Any]:
     """
     if not isinstance(result, list):
         raise InvalidResponseError(
-            f"Recherche impossible : l'API devait renvoyer une liste, elle a renvoyé {type(result).__name__}",
+            f"Cannot search: the API should have returned a list, it returned {type(result).__name__}",
             response_text=str(result),
         )
     query = _normalize(search)
@@ -114,7 +114,7 @@ class Library:
                 id is for fetching all data and tracks of a specific playlist, while search is just for finding playlists by name.
         """
         if search is not None and id is not None:
-            raise InvalidArgumentError("`search` et `id` ne peuvent pas être utilisés en même temps")
+            raise InvalidArgumentError("`search` and `id` can't be used together")
         if id:
             return self.client._get(f"{self.endpoint}/playlists/{segment(id)}")
         result = self.client._get(f"{self.endpoint}/playlists")

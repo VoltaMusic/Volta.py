@@ -82,9 +82,9 @@ class VoltaClient:
         missing = [name for name, value in (("CLIENT_ID", self.client_id), ("CLIENT_SECRET", self.client_secret)) if not value]
         if missing:
             raise ConfigurationError(
-                f"{' et '.join(missing)} manquant(s). Passe-les à VoltaClient(client_id=..., client_secret=...) "
-                "ou ajoute-les dans le fichier .env à la racine du projet "
-                "(et vérifie qu'une variable d'environnement vide du même nom ne les masque pas)."
+                f"{' and '.join(missing)} missing. Pass them to VoltaClient(client_id=..., client_secret=...) "
+                "or add them to the .env file at the root of your project "
+                "(and check that an empty environment variable with the same name isn't hiding them)."
             )
         url = f"{self.base_url}{TOKEN_ENDPOINT}"
         payload = {
@@ -95,19 +95,19 @@ class VoltaClient:
         response = self._send(self._session.post, url, data=payload, timeout=DEFAULT_TIMEOUT)
         if response.status_code != 200:
             raise error_from_response(
-                response.status_code, response.text, "Échec du rafraîchissement du token",
+                response.status_code, response.text, "Token refresh failed",
                 headers=getattr(response, "headers", None),
             )
         try:
             token_data = response.json()
         except ValueError as e:
             raise InvalidResponseError(
-                "Échec du rafraîchissement du token : la réponse de l'API n'est pas du JSON",
+                "Token refresh failed: the API response is not JSON",
                 response_text=response.text,
             ) from e
         if not _is_valid_token_data(token_data):
             raise InvalidResponseError(
-                "Échec du rafraîchissement du token : `access_token` ou `expires_in` absent ou invalide",
+                "Token refresh failed: `access_token` or `expires_in` missing or invalid",
                 response_text=response.text,
             )
         # Échéance absolue : contrairement à `expires_in`, elle reste juste
@@ -129,7 +129,7 @@ class VoltaClient:
             os.chmod(self.token_file, 0o600)  # fichier déjà existant, créé avec d'autres droits
         except OSError as e:
             raise TokenStorageError(
-                f"Impossible d'écrire le fichier de token ({e.strerror or e})", path=self.token_file
+                f"Cannot write the token file ({e.strerror or e})", path=self.token_file
             ) from e
 
     def _load_token(self) -> dict[str, Any]:
@@ -139,7 +139,7 @@ class VoltaClient:
                     token_data = json.load(f)
             except OSError as e:
                 raise TokenStorageError(
-                    f"Impossible de lire le fichier de token ({e.strerror or e})", path=self.token_file
+                    f"Cannot read the token file ({e.strerror or e})", path=self.token_file
                 ) from e
             except ValueError:
                 token_data = None
@@ -151,11 +151,11 @@ class VoltaClient:
                     token_data["expires_at"] = int(expires_at)
                 if _seconds_left(token_data) > TOKEN_REFRESH_MARGIN:
                     return token_data
-                logger.info("Jeton expiré (%s), un nouveau jeton va être demandé.", self.token_file)
+                logger.info("Token expired (%s), requesting a new one.", self.token_file)
             else:
                 # Fichier corrompu ou incomplet : pas une raison de planter, on
                 # redemande simplement un jeton (qui réécrira le fichier).
-                logger.warning("Fichier de token invalide (%s), un nouveau jeton va être demandé.", self.token_file)
+                logger.warning("Invalid token file (%s), requesting a new token.", self.token_file)
         return self._refresh_token()
 
     def _start_background_refresh(self) -> None:
@@ -188,9 +188,8 @@ class VoltaClient:
             self._refresh_timer = None
 
     def close(self) -> None:
-        """Arrête le rafraîchissement automatique et ferme la session HTTP.
-        Peut être appelée
-        plusieurs fois sans effet de bord."""
+        """Stop the automatic token refresh and close the HTTP session.
+        Safe to call several times."""
         atexit.unregister(self.close)  # plus rien à faire à la sortie du programme
         self.stop_background_refresh()
         self._session.close()
@@ -226,7 +225,7 @@ class VoltaClient:
                 return response.text
 
         raise error_from_response(
-            response.status_code, response.text, f"Requête vers {response.url} échouée",
+            response.status_code, response.text, f"Request to {response.url} failed",
             headers=getattr(response, "headers", None),
         )
 
@@ -235,7 +234,7 @@ class VoltaClient:
         serveur avant même notre propre échéance de refresh), de façon
         thread-safe, et reprogramme le refresh automatique sur la nouvelle
         échéance."""
-        logger.info("401 reçu : jeton invalide, rafraîchissement forcé.")
+        logger.info("401 received: token rejected, forcing a refresh.")
         token_data = self._refresh_token()
         with self._token_lock:
             self.token_data = token_data
@@ -253,14 +252,14 @@ class VoltaClient:
             return send(url, **kwargs)
         except requests.exceptions.Timeout as e:
             raise RequestTimeoutError(
-                f"Pas de réponse de l'API après {kwargs.get('timeout', DEFAULT_TIMEOUT)} s", url=url
+                f"No response from the API after {kwargs.get('timeout', DEFAULT_TIMEOUT)} s", url=url
             ) from e
         except requests.exceptions.ConnectionError as e:
             raise ConnectionFailedError(
-                "Impossible de joindre l'API (serveur injoignable, pas de connexion ou erreur SSL)", url=url
+                "Cannot reach the API (server unreachable, no connection or SSL error)", url=url
             ) from e
         except requests.exceptions.RequestException as e:
-            raise NetworkError(f"La requête n'a pas pu aboutir ({type(e).__name__})", url=url) from e
+            raise NetworkError(f"The request could not be completed ({type(e).__name__})", url=url) from e
 
     def _request(
         self,

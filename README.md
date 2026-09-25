@@ -267,7 +267,7 @@ Catch `VoltaAPIExceptions` alone to handle every error the library can raise.
 
 ## 🔑 Token lifecycle
 
-- On first use, if no token file exists yet, the client fetches one via `client_credentials` and saves it to `config/token.json` (configurable via `token_file=` in `VoltaClient(...)`).
+- On first use, if no token file exists yet, the client fetches one via `client_credentials` and saves it in your user cache folder: `%LOCALAPPDATA%\voltalib\` on Windows, `~/.cache/voltalib/` on Linux / macOS (or `$XDG_CACHE_HOME/voltalib/`). The file name depends on your `CLIENT_ID`, so two API keys never share a token, and the file is readable by your user only. Pass `token_file=` to `VoltaClient(...)` to use another path.
 - A background thread refreshes the token shortly before it expires — no request ever waits on this.
 - If the API rejects a request with `401` (token invalid sooner than expected), the client refreshes immediately and retries **once**, silently.
 - The token file stores the absolute expiry time (`expires_at`, a Unix timestamp). A program restarted later reuses the token only if it is still valid, and fetches a new one otherwise — no wasted token, no stale token sent to the API.

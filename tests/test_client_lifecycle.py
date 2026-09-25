@@ -83,7 +83,7 @@ def _client_with_session(tmp_path, monkeypatch, token_file, *responses):
     session = FakeSession()
     session.post_responses.extend(responses)
     monkeypatch.setattr("VoltaLibPython.client._build_session", lambda: session)
-    return VoltaClient(token_file=str(token_file)), session
+    return VoltaClient(token_file=str(token_file) if token_file else None), session
 
 
 class TestTokenExpiry:
@@ -294,3 +294,46 @@ class TestAtexit:
         client = make_client()
         client.close()
         assert unregistered == [client.close]
+
+
+class TestDefaultTokenFile:
+    def _default(self, monkeypatch, tmp_path, client_id):
+        from VoltaLibPython.client import _default_token_file
+
+        monkeypatch.setenv("LOCALAPPDATA", str(tmp_path))
+        monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path))
+        return _default_token_file(client_id)
+
+    def test_default_is_in_user_cache_folder(self, monkeypatch, tmp_path):
+        path = self._default(monkeypatch, tmp_path, "id")
+        assert os.path.dirname(path) == os.path.join(str(tmp_path), "voltalib")
+        assert "id" not in os.path.basename(path)  # l'ID client n'apparaît pas en clair
+
+    def test_each_client_id_gets_its_own_file(self, monkeypatch, tmp_path):
+        assert self._default(monkeypatch, tmp_path, "a") != self._default(monkeypatch, tmp_path, "b")
+        assert self._default(monkeypatch, tmp_path, "a") == self._default(monkeypatch, tmp_path, "a")
+
+    def test_client_uses_default_when_token_file_not_given(self, monkeypatch, tmp_path):
+        from VoltaLibPython.client import _default_token_file
+
+        monkeypatch.setenv("LOCALAPPDATA", str(tmp_path))
+        monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path))
+        client, _ = _client_with_session(
+            tmp_path, monkeypatch, None, FakeResponse(200, {"access_token": "tok", "expires_in": 3600})
+        )
+        try:
+            assert client.token_file == _default_token_file("test_client_id")
+            assert os.path.exists(client.token_file)
+        finally:
+            client.close()
+
+    @pytest.mark.skipif(os.name == "nt", reason="Windows ignore les droits POSIX")
+    def test_token_file_is_private(self, tmp_path, monkeypatch):
+        token_file = tmp_path / "token.json"
+        token_file.write_text("{}")
+        os.chmod(token_file, 0o644)
+        client, _ = _client_with_session(
+            tmp_path, monkeypatch, token_file, FakeResponse(200, {"access_token": "tok", "expires_in": 3600})
+        )
+        client.close()
+        assert os.stat(token_file).st_mode & 0o777 == 0o600

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import atexit
 import contextlib
+import hashlib
 import json
 import logging
 import os
@@ -38,12 +39,11 @@ class VoltaClient:
     def __init__(
         self,
         base_url: str = "https://api.volta-music.com",
-        token_file: str = "config/token.json",
+        token_file: Optional[str] = None,
         show_progress: bool = False,
         client_id: Optional[str] = None,
         client_secret: Optional[str] = None,
     ) -> None:
-        self.token_file = token_file
         self.base_url = base_url
         # Les identifiants passés en argument priment sur l'environnement.
         # Le .env n'est lu qu'ici, et seulement s'il manque quelque chose :
@@ -52,6 +52,7 @@ class VoltaClient:
             load_dotenv()
         self.client_id = client_id or os.getenv("CLIENT_ID")
         self.client_secret = client_secret or os.getenv("CLIENT_SECRET")
+        self.token_file = token_file or _default_token_file(self.client_id)
         self.show_progress = show_progress
 
         self._session = _build_session()
@@ -120,8 +121,12 @@ class VoltaClient:
             directory = os.path.dirname(self.token_file)
             if directory:
                 os.makedirs(directory, exist_ok=True)
-            with open(self.token_file, "w") as f:
+            # Lisible par l'utilisateur seul : le fichier contient un jeton
+            # d'accès en clair (sans effet sous Windows, qui ignore ces droits).
+            fd = os.open(self.token_file, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+            with os.fdopen(fd, "w") as f:
                 json.dump(token_data, f, indent=4)
+            os.chmod(self.token_file, 0o600)  # fichier déjà existant, créé avec d'autres droits
         except OSError as e:
             raise TokenStorageError(
                 f"Impossible d'écrire le fichier de token ({e.strerror or e})", path=self.token_file
@@ -290,6 +295,24 @@ class VoltaClient:
 
     def _delete(self, endpoint: str, data: Optional[dict[str, Any]] = None) -> Any:
         return self._request("DELETE", endpoint, data=data)
+
+
+def _default_token_file(client_id: Optional[str]) -> str:
+    """Emplacement par défaut du fichier de token : le dossier cache de
+    l'utilisateur, indépendant du dossier courant et hors de tout dépôt git.
+
+    - Windows : %LOCALAPPDATA%/voltalib/
+    - Linux / macOS : $XDG_CACHE_HOME/voltalib/ (par défaut ~/.cache/voltalib/)
+
+    Le nom dépend de l'ID client : deux clés API différentes n'écrasent
+    jamais le jeton l'une de l'autre.
+    """
+    if os.name == "nt":
+        base = os.getenv("LOCALAPPDATA") or os.path.join(os.path.expanduser("~"), "AppData", "Local")
+    else:
+        base = os.getenv("XDG_CACHE_HOME") or os.path.join(os.path.expanduser("~"), ".cache")
+    key = hashlib.sha256((client_id or "").encode()).hexdigest()[:16]
+    return os.path.join(base, "voltalib", f"token-{key}.json")
 
 
 def _is_valid_token_data(token_data: Any) -> bool:

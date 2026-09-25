@@ -18,6 +18,8 @@ Legend: `+` added · `~` changed / fixed · `-` removed
 ~ [FIX] A client that is neither used with `with` nor closed by hand is now closed automatically when the program exits (atexit)
 ~ [FIX] The token file stores an absolute expiry time (expires_at) instead of a relative expires_in rewritten on exit: a token that expired while the program was stopped is no longer sent to the API (it used to cost a 401 and a retry). Old token files are still read, using the file's modification time
 ~ [CHANGE] close() / stop_background_refresh() no longer rewrite the token file
+~ [CHANGE] The token file is saved by default in the user cache folder (%LOCALAPPDATA%\voltalib\ on Windows, ~/.cache/voltalib/ elsewhere) instead of config/token.json in the current directory, under a name that depends on CLIENT_ID. A new token is fetched once after upgrading; pass token_file="config/token.json" to keep the old location
+~ [CHANGE] The token file is created readable by the current user only (0600)
 ~ [FIX] post.library.track() and post.library.playlist_track() now send the track object the API requires (id, name, artist, album, plus artist_id / album_id / cover_url / duration_ms when known) instead of {"track_id": ...}, which the API rejected with a 422
 ~ [CHANGE] post.library.track(track) and post.library.playlist_track(playlist_id, track) take the whole track dict (from get.library.tracks(), get.catalog.track() or search()), not just its ID; passing only an ID raises InvalidArgumentError with an explanation
 ~ [FIX] post.library.playlist(description=...) : the API ignores the description on creation, so it is now set right after with a PUT

@@ -9,6 +9,7 @@ Legend: `+` added · `~` changed / fixed · `-` removed
 ## Unreleased
 
 ```diff
++ [FEAT] Every exception can be imported from the package root (from VoltaLibPython import NotFoundError), and VoltaLibPython.__version__ gives the installed version
 + [TEST] Track payload tests built from the real API shapes (library and catalog tracks)
 
 ~ [FIX] post.library.track() and post.library.playlist_track() now send the track object the API requires (id, name, artist, album, plus artist_id / album_id / cover_url / duration_ms when known) instead of {"track_id": ...}, which the API rejected with a 422

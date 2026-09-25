@@ -279,3 +279,21 @@ class TestInvalidArguments:
         with pytest.raises(InvalidArgumentError):
             client.put.library.playlist("pl1")
         assert fake_session.calls == []
+
+
+class TestPublicImports:
+    def test_every_exception_is_importable_from_the_package(self):
+        import VoltaLibPython
+        from VoltaLibPython import exceptions
+
+        for name in VoltaLibPython.__all__:
+            assert hasattr(VoltaLibPython, name)
+        # Toute classe d'exception du module est exposée à la racine du package.
+        for name, value in vars(exceptions).items():
+            if isinstance(value, type) and issubclass(value, Exception) and not name.startswith("_"):
+                assert getattr(VoltaLibPython, name) is value
+
+    def test_version_is_exposed(self):
+        import VoltaLibPython
+
+        assert isinstance(VoltaLibPython.__version__, str)

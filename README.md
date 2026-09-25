@@ -239,7 +239,7 @@ Printing an exception gives a readable message, with the details on the next lin
 ```
 
 ```python
-from VoltaLibPython.exceptions import (
+from VoltaLibPython import (
     APIError, NetworkError, NotFoundError, RateLimitError, VoltaAPIExceptions,
 )
 

@@ -41,11 +41,14 @@ class VoltaClient:
         base_url: str = "https://api.volta-music.com",
         token_file: str = "config/token.json",
         show_progress: bool = False,
+        client_id: Optional[str] = None,
+        client_secret: Optional[str] = None,
     ) -> None:
         self.token_file = token_file
         self.base_url = base_url
-        self.client_id = os.getenv("CLIENT_ID")
-        self.client_secret = os.getenv("CLIENT_SECRET")
+        # Les identifiants passés en argument priment sur l'environnement.
+        self.client_id = client_id or os.getenv("CLIENT_ID")
+        self.client_secret = client_secret or os.getenv("CLIENT_SECRET")
         self.show_progress = show_progress
 
         self._session = _build_session()
@@ -71,8 +74,9 @@ class VoltaClient:
         missing = [name for name, value in (("CLIENT_ID", self.client_id), ("CLIENT_SECRET", self.client_secret)) if not value]
         if missing:
             raise ConfigurationError(
-                f"{' et '.join(missing)} manquant(s). Ajoute-les dans le fichier .env à la racine du projet "
-                "(ou vérifie qu'une variable d'environnement vide du même nom ne les masque pas)."
+                f"{' et '.join(missing)} manquant(s). Passe-les à VoltaClient(client_id=..., client_secret=...) "
+                "ou ajoute-les dans le fichier .env à la racine du projet "
+                "(et vérifie qu'une variable d'environnement vide du même nom ne les masque pas)."
             )
         url = f"{self.base_url}{TOKEN_ENDPOINT}"
         payload = {

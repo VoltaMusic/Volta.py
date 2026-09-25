@@ -43,6 +43,12 @@ CLIENT_SECRET=volta_sk_XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 Get these from your Volta account, under **API Keys**. ⚠️ `CLIENT_SECRET` is shown only once at creation — copy it immediately.
 
+You can also pass them directly, which takes priority over the environment (handy for notebooks, tests, or apps with their own secret store):
+
+```python
+client = VoltaClient(client_id="volta_id_...", client_secret="volta_sk_...")
+```
+
 ---
 
 ## 🚀 Quick start

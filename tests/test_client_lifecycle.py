@@ -121,3 +121,27 @@ class TestDefaults:
     def test_spinner_is_disabled_by_default(self, make_client):
         client = make_client()
         assert client.show_progress is False
+
+
+class TestCredentials:
+    def test_arguments_take_priority_over_environment(self, tmp_path, monkeypatch):
+        from tests.conftest import FakeSession
+
+        session = FakeSession()
+        session.post_responses.append(FakeResponse(200, {"access_token": "tok", "expires_in": 3600}))
+        monkeypatch.setattr("VoltaLibPython.client._build_session", lambda: session)
+
+        client = VoltaClient(
+            token_file=str(tmp_path / "token.json"), client_id="arg_id", client_secret="arg_secret"
+        )
+        try:
+            _, _, _, payload = session.calls[0]
+            assert payload["client_id"] == "arg_id"
+            assert payload["client_secret"] == "arg_secret"
+        finally:
+            client.stop_background_refresh()
+
+    def test_environment_is_used_when_no_argument_is_given(self, make_client):
+        client = make_client()
+        assert client.client_id == "test_client_id"
+        assert client.client_secret == "test_client_secret"

@@ -242,8 +242,8 @@ class TestTokenFile:
         finally:
             client.stop_background_refresh()
 
-    def test_unwritable_token_file_raises_token_storage_error(self, tmp_path, monkeypatch):
-        # Le chemin du fichier de token est un dossier : impossible d'y écrire.
+    def test_unreadable_token_file_raises_token_storage_error(self, tmp_path, monkeypatch):
+        # Le chemin du fichier de token est un dossier : impossible de le lire (voir test_client_lifecycle pour l'écriture).
         token_dir = tmp_path / "token.json"
         token_dir.mkdir()
         session = FakeSession()
@@ -297,3 +297,61 @@ class TestPublicImports:
         import VoltaLibPython
 
         assert isinstance(VoltaLibPython.__version__, str)
+
+
+# ---------------------------------------------------------------------------
+# Messages affichés (str(exception))
+# ---------------------------------------------------------------------------
+
+class TestExceptionMessages:
+    @pytest.mark.parametrize("exc, expected", [
+        (TokenStorageError("Cannot write"), "Cannot write"),
+        (TokenStorageError("Cannot write", path="/tmp/t.json"), "Cannot write\n  -> file: /tmp/t.json"),
+        (NetworkError("No response"), "No response"),
+        (NetworkError("No response", url="https://x.test"), "No response\n  -> https://x.test"),
+        (InvalidResponseError("Bad"), "Bad"),
+        (InvalidResponseError("Bad", response_text="  <html>  "), "Bad\n  -> response received: <html>"),
+        (APIError("Failed"), "Failed"),
+        (APIError("Failed", status_code=418), "[418] Failed"),
+        (RateLimitError("Slow", status_code=429), "[429] Slow"),
+        (RateLimitError("Slow", status_code=429, retry_after=5), "[429] Slow\n  -> retry in 5 s"),
+    ])
+    def test_str(self, exc, expected):
+        assert str(exc) == expected
+
+    @pytest.mark.parametrize("response_text, detail", [
+        (None, None),
+        ("", None),
+        ("plain text error", "plain text error"),
+        ("   ", None),
+        ('{"message": "from message"}', "from message"),
+        ('{"error_description": "bad secret"}', "bad secret"),
+        ('{"error": "invalid_client"}', "invalid_client"),
+        ('{"detail": "", "error": "fallback"}', "fallback"),
+        ('{"unknown": 1}', '{"unknown": 1}'),
+        ("[1, 2]", "[1, 2]"),
+        ('{"detail": ["raw", {"msg": "no loc"}]}', "raw; no loc"),
+        ('{"detail": [{"loc": ["body"], "msg": "whole body"}]}', "whole body"),
+    ])
+    def test_detail(self, response_text, detail):
+        assert APIError("x", response_text=response_text).detail == detail
+
+    @pytest.mark.parametrize("headers, retry_after", [
+        (None, None),
+        ({}, None),
+        ({"Retry-After": "12"}, 12),
+        ({"Retry-After": "Wed, 21 Oct 2026 07:28:00 GMT"}, None),  # format date : non géré
+    ])
+    def test_retry_after_header(self, headers, retry_after):
+        from VoltaLibPython.exceptions import error_from_response
+
+        exc = error_from_response(429, "", "Request failed", headers=headers)
+        assert isinstance(exc, RateLimitError)
+        assert exc.retry_after == retry_after
+
+    @pytest.mark.parametrize("status, cls", [(418, APIError), (599, ServerError)])
+    def test_unlisted_status_codes(self, status, cls):
+        from VoltaLibPython.exceptions import error_from_response
+
+        exc = error_from_response(status, "", "Request failed")
+        assert type(exc) is cls

@@ -548,3 +548,15 @@ class TestPathEncoding:
 
         _, url, _, _ = fake_session.calls[0]
         assert url.endswith("/api/v1/playlist/bb7d0e57-bb01-4491-88b6-ce62ee3d75f0")
+
+
+class TestGenericGetRequest:
+    def test_get_request_calls_the_given_endpoint(self, make_client, fake_session):
+        client = make_client()
+        fake_session.get_responses.append(FakeResponse(200, {"ok": True}))
+
+        result = client.get.request("/api/v1/custom")
+
+        assert result == {"ok": True}
+        method, url, _, params = fake_session.calls[0]
+        assert (method, url, params) == ("GET", "https://api.volta-music.test/api/v1/custom", None)

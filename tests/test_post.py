@@ -236,3 +236,14 @@ class TestPostLibrary:
 
         with pytest.raises(ForbiddenError):
             client.post.library.playlist("Roadtrip")
+
+
+class TestPlaylistDescriptionFallback:
+    def test_non_dict_put_response_keeps_created_playlist(self, make_client, fake_session):
+        client = make_client()
+        fake_session.post_responses.append(FakeResponse(200, {"id": "pl1", "name": "Roadtrip", "description": None}))
+        fake_session.put_responses.append(FakeResponse(200, []))
+
+        result = client.post.library.playlist("Roadtrip", description="Summer")
+
+        assert result == {"id": "pl1", "name": "Roadtrip", "description": None}

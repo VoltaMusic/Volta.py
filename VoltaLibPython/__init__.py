@@ -23,7 +23,7 @@ from .exceptions import (
 
 try:
     __version__ = version("VoltaLib")
-except PackageNotFoundError:  # sources utilisées sans installation (pip install -e . non fait)
+except PackageNotFoundError:  # pragma: no cover - sources utilisées sans installation (pip install -e . non fait)
     __version__ = "0.0.0"
 
 __all__ = [

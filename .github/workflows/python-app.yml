@@ -41,4 +41,4 @@ jobs:
     - name: Type-check with mypy
       run: mypy
     - name: Test with pytest
-      run: pytest --cov=VoltaLibPython --cov-report=term-missing
+      run: pytest --cov

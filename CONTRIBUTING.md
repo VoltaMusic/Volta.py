@@ -24,7 +24,7 @@ The CI runs these three commands on Python 3.10, 3.11, 3.12 and 3.13. Run them b
 ```bash
 ruff check .     # lint (ruff check . --fix fixes most issues)
 mypy             # type check
-pytest           # tests (add --cov=VoltaLibPython for coverage)
+pytest --cov     # tests + coverage (fails under 95 %, see [tool.coverage] in pyproject.toml)
 ```
 
 To run them on every supported Python version at once, like the CI, use `scripts/test_matrix.sh` (Linux, macOS, Git Bash) or `scripts\test_matrix.bat` (Windows). Both need [uv](https://docs.astral.sh/uv/).

@@ -6,7 +6,7 @@ Legend: `+` added · `~` changed / fixed · `-` removed
 
 ---
 
-## Unreleased
+## Ver 1.5.1 - Sep 25, 2026
 
 ```diff
 + [TEST] Tests for the background token refresh (success, failure retried in 30 s, no reschedule after close), token endpoint errors (401 / 400 / 5xx), token file write failures, 204 responses without a body, the spinner around requests, client.get.request(), every exception message and detail format, Retry-After parsing and spinner stream errors

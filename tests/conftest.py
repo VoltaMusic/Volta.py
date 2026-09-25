@@ -5,12 +5,8 @@ Aucune requête réseau réelle n'est faite : `VoltaClient._session` est
 remplacée par une fausse session (`FakeSession`) dont on contrôle
 entièrement les réponses, dans l'ordre où elles doivent être renvoyées.
 
-Adapter si besoin :
-- Le chemin d'import `from VoltaLibPython.client import VoltaClient`
-  suppose que ces tests tournent depuis la racine du projet, avec un
-  package `VoltaLibPython` contenant `client.py` et `exceptions.py`.
-  Si ton package s'appelle autrement, ajuste l'import dans ce fichier
-  et dans test_volta_client.py.
+Les tests se lancent depuis la racine du projet (`pytest`) : la config est
+dans la section [tool.pytest.ini_options] de pyproject.toml.
 """
 
 from __future__ import annotations
@@ -120,7 +116,7 @@ def make_client(tmp_path, monkeypatch, fake_session):
       mémoire (pas de fichier existant à lire, pas de refresh initial).
     - La session interne est remplacée par `fake_session` juste après
       construction.
-    - Tous les clients créés sont proprement arrêtés (`stop_background_refresh`)
+    - Tous les clients créés sont proprement fermés (`close`)
       à la fin du test pour ne laisser traîner aucun thread.
     """
     created: list[VoltaClient] = []
@@ -139,4 +135,4 @@ def make_client(tmp_path, monkeypatch, fake_session):
     yield _make
 
     for client in created:
-        client.stop_background_refresh()
+        client.close()

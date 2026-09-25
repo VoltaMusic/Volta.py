@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "VoltaLib"
-version = "1.4.0"
+version = "1.5.0"
 description = "Python client for the Volta Music public API, with automatic token refresh and typed exceptions"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -33,7 +33,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=7", "build"]
+dev = ["pytest>=7", "pytest-cov", "ruff", "mypy", "types-requests", "pre-commit", "build"]
 
 [project.urls]
 Homepage = "https://github.com/VoltaMusic/Volta.py"
@@ -46,3 +46,18 @@ include = ["VoltaLibPython", "VoltaLibPython.*"]
 
 [tool.setuptools.package-data]
 VoltaLibPython = ["py.typed"]
+
+[tool.ruff]
+line-length = 127
+extend-exclude = ["main.py"]
+
+[tool.ruff.lint]
+# pycodestyle (erreurs), pyflakes, tri des imports, bugbear.
+select = ["E4", "E7", "E9", "F", "I", "B"]
+
+[tool.mypy]
+files = ["VoltaLibPython"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]

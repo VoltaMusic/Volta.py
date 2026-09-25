@@ -1,13 +1,10 @@
 from __future__ import annotations
 
 import unicodedata
-from typing import Any, TYPE_CHECKING
+from typing import Any, Optional
 
 from ..exceptions import InvalidArgumentError, InvalidResponseError
-from ._url import segment
-
-if TYPE_CHECKING:
-    from ..client import VoltaClient
+from ._base import _Endpoint
 
 
 def _normalize(text: str) -> str:
@@ -27,7 +24,7 @@ def _filter(result: Any, key: str, search: str) -> list[Any]:
     """
     if not isinstance(result, list):
         raise InvalidResponseError(
-            f"Recherche impossible : l'API devait renvoyer une liste, elle a renvoyé {type(result).__name__}",
+            f"Cannot search: the API should have returned a list, it returned {type(result).__name__}",
             response_text=str(result),
         )
     query = _normalize(search)
@@ -37,11 +34,10 @@ def _filter(result: Any, key: str, search: str) -> list[Any]:
     ]
 
 
-class Library:
-    def __init__(self, client: "VoltaClient") -> None:
-        self.client = client
-        self.endpoint = "/api/v1/library"
-    def tracks(self, search: str = None) -> Any:
+class Library(_Endpoint):
+    endpoint = "/api/v1/library"
+
+    def tracks(self, search: Optional[str] = None) -> Any:
         """
         Get all liked tracks.
 
@@ -51,11 +47,11 @@ class Library:
         Args:
             search (str, optional): A string to filter tracks by title. Defaults to None.
         """
-        result = self.client._get(f"{self.endpoint}/tracks")
+        result = self.client._get(self._path("tracks"))
         if search:
             return _filter(result, "title", search)
         return result
-    def albums(self, search: str = None) -> Any:
+    def albums(self, search: Optional[str] = None) -> Any:
         """
         Get all liked albums.
 
@@ -65,11 +61,11 @@ class Library:
         Args:
             search (str, optional): A string to filter albums by title. Defaults to None.
         """
-        result = self.client._get(f"{self.endpoint}/albums")
+        result = self.client._get(self._path("albums"))
         if search:
             return _filter(result, "title", search)
         return result
-    def artists(self, search: str = None) -> Any:
+    def artists(self, search: Optional[str] = None) -> Any:
         """
         Get all liked artists.
 
@@ -79,7 +75,7 @@ class Library:
         Args:
             search (str, optional): A string to filter artists by name. Defaults to None.
         """
-        result = self.client._get(f"{self.endpoint}/artists")
+        result = self.client._get(self._path("artists"))
         if search:
             return _filter(result, "name", search)
         return result
@@ -90,7 +86,7 @@ class Library:
         Args:
             id (str): The ID of the artist.
         """
-        return self.client._get(f"{self.endpoint}/artists/{segment(id)}/albums")
+        return self.client._get(self._path("artists", id, "albums"))
     def artist_tracks(self, id: str) -> Any:
         """
         Get all tracks of a specific artist by their ID.
@@ -98,8 +94,8 @@ class Library:
         Args:
             id (str): The ID of the artist.
         """
-        return self.client._get(f"{self.endpoint}/artists/{segment(id)}/tracks")
-    def playlists(self, search: str = None, id: str = None) -> Any:
+        return self.client._get(self._path("artists", id, "tracks"))
+    def playlists(self, search: Optional[str] = None, id: Optional[str] = None) -> Any:
         """
         Get all liked playlists or a specific playlist by ID.
 
@@ -114,10 +110,10 @@ class Library:
                 id is for fetching all data and tracks of a specific playlist, while search is just for finding playlists by name.
         """
         if search is not None and id is not None:
-            raise InvalidArgumentError("`search` et `id` ne peuvent pas être utilisés en même temps")
+            raise InvalidArgumentError("`search` and `id` can't be used together")
         if id:
-            return self.client._get(f"{self.endpoint}/playlists/{segment(id)}")
-        result = self.client._get(f"{self.endpoint}/playlists")
+            return self.client._get(self._path("playlists", id))
+        result = self.client._get(self._path("playlists"))
         if search:
             return _filter(result, "name", search)
         return result

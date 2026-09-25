@@ -1,18 +1,18 @@
 from __future__ import annotations
 
-from typing import Any, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Optional
 
-from .library import Library
 from .catalog import Catalog
-from .library_write import LibraryPost, LibraryPut, LibraryDelete
+from .library import Library
+from .library_write import LibraryDelete, LibraryPost, LibraryPut
 
 if TYPE_CHECKING:
     from ..client import VoltaClient
 
 
 class Get:
-    """Espace de noms pour les requêtes GET. Utilise le client parent,
-    ne crée jamais de nouvelle instance de VoltaClient."""
+    """Namespace for GET requests. Uses the parent client, never creates
+    a new VoltaClient."""
 
     def __init__(self, client: "VoltaClient") -> None:
         self.client = client
@@ -24,7 +24,7 @@ class Get:
 
 
 class Post:
-    """Espace de noms pour les requêtes POST."""
+    """Namespace for POST requests."""
 
     def __init__(self, client: "VoltaClient") -> None:
         self.client = client
@@ -35,7 +35,7 @@ class Post:
 
 
 class Put:
-    """Espace de noms pour les requêtes PUT."""
+    """Namespace for PUT requests."""
 
     def __init__(self, client: "VoltaClient") -> None:
         self.client = client
@@ -46,7 +46,7 @@ class Put:
 
 
 class Delete:
-    """Espace de noms pour les requêtes DELETE."""
+    """Namespace for DELETE requests."""
 
     def __init__(self, client: "VoltaClient") -> None:
         self.client = client

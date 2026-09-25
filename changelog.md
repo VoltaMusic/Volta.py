@@ -6,7 +6,7 @@ Legend: `+` added · `~` changed / fixed · `-` removed
 
 ---
 
-## Unreleased
+## Ver 1.5.0 - Sep 25, 2026
 
 ```diff
 + [DOC] CONTRIBUTING.md: setup, checks, project layout, how to add an endpoint, conventions and release steps

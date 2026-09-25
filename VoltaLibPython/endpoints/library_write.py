@@ -1,12 +1,9 @@
 from __future__ import annotations
 
-from typing import Any, Mapping, Optional, TYPE_CHECKING
+from typing import Any, Mapping, Optional
 
 from ..exceptions import InvalidArgumentError
-from ._url import segment
-
-if TYPE_CHECKING:
-    from ..client import VoltaClient
+from ._base import _Endpoint
 
 
 def _playlist_fields(
@@ -78,10 +75,9 @@ def _track_payload(track: Any) -> dict[str, Any]:
     return payload
 
 
-class LibraryPost:
-    def __init__(self, client: "VoltaClient") -> None:
-        self.client = client
-        self.endpoint = "/api/v1/library"
+class LibraryPost(_Endpoint):
+    endpoint = "/api/v1/library"
+
     def track(self, track: Mapping[str, Any]) -> Any:
         """
         Add a track to your library (like it).
@@ -95,7 +91,7 @@ class LibraryPost:
         Args:
             track (dict): The track to add.
         """
-        return self.client._post(f"{self.endpoint}/tracks", _track_payload(track))
+        return self.client._post(self._path("tracks"), _track_payload(track))
     def playlist(self, name: str, description: Optional[str] = None, is_public: Optional[bool] = None) -> Any:
         """
         Create a new playlist.
@@ -110,13 +106,11 @@ class LibraryPost:
         """
         if not name:
             raise InvalidArgumentError("`name` is required to create a playlist")
-        created = self.client._post(f"{self.endpoint}/playlists", _playlist_fields(name, description, is_public))
+        created = self.client._post(self._path("playlists"), _playlist_fields(name, description, is_public))
         # L'API ignore la description à la création (elle revient à null) mais
         # l'accepte en modification : on la pose juste après si besoin.
         if description and isinstance(created, dict) and created.get("id") and created.get("description") != description:
-            updated = self.client._put(
-                f"{self.endpoint}/playlists/{segment(created['id'])}", {"description": description}
-            )
+            updated = self.client._put(self._path("playlists", created["id"]), {"description": description})
             if isinstance(updated, dict):
                 created = {**created, **updated}
         return created
@@ -134,15 +128,12 @@ class LibraryPost:
             playlist_id (str): The ID of the playlist.
             track (dict): The track to add.
         """
-        return self.client._post(
-            f"{self.endpoint}/playlists/{segment(playlist_id)}/tracks", _track_payload(track)
-        )
+        return self.client._post(self._path("playlists", playlist_id, "tracks"), _track_payload(track))
 
 
-class LibraryPut:
-    def __init__(self, client: "VoltaClient") -> None:
-        self.client = client
-        self.endpoint = "/api/v1/library"
+class LibraryPut(_Endpoint):
+    endpoint = "/api/v1/library"
+
     def playlist(
         self,
         playlist_id: str,
@@ -167,7 +158,7 @@ class LibraryPut:
         fields = _playlist_fields(name, description, is_public)
         if not fields:
             raise InvalidArgumentError("give at least one field to update: `name`, `description` or `is_public`")
-        return self.client._put(f"{self.endpoint}/playlists/{segment(playlist_id)}", fields)
+        return self.client._put(self._path("playlists", playlist_id), fields)
     def reorder(self, playlist_id: str, track_ids: list[str]) -> Any:
         """
         Reorder the tracks of a playlist.
@@ -179,14 +170,13 @@ class LibraryPut:
             track_ids (list[str]): The track IDs of the playlist, in the new order.
         """
         return self.client._put(
-            f"{self.endpoint}/playlists/{segment(playlist_id)}/tracks/reorder", {"track_ids": list(track_ids)}
+            self._path("playlists", playlist_id, "tracks", "reorder"), {"track_ids": list(track_ids)}
         )
 
 
-class LibraryDelete:
-    def __init__(self, client: "VoltaClient") -> None:
-        self.client = client
-        self.endpoint = "/api/v1/library"
+class LibraryDelete(_Endpoint):
+    endpoint = "/api/v1/library"
+
     def track(self, track_id: str) -> Any:
         """
         Remove a track from your library.
@@ -196,7 +186,7 @@ class LibraryDelete:
         Args:
             track_id (str): The ID of the track.
         """
-        return self.client._delete(f"{self.endpoint}/tracks/{segment(track_id)}")
+        return self.client._delete(self._path("tracks", track_id))
     def album(self, album_id: str) -> Any:
         """
         Remove every track of an album from your library.
@@ -206,7 +196,7 @@ class LibraryDelete:
         Args:
             album_id (str): The ID of the album.
         """
-        return self.client._delete(f"{self.endpoint}/albums/{segment(album_id)}")
+        return self.client._delete(self._path("albums", album_id))
     def artist(self, artist_id: str) -> Any:
         """
         Unfollow an artist.
@@ -216,7 +206,7 @@ class LibraryDelete:
         Args:
             artist_id (str): The ID of the artist.
         """
-        return self.client._delete(f"{self.endpoint}/artists/{segment(artist_id)}")
+        return self.client._delete(self._path("artists", artist_id))
     def playlist(self, playlist_id: str) -> Any:
         """
         Delete a playlist.
@@ -226,7 +216,7 @@ class LibraryDelete:
         Args:
             playlist_id (str): The ID of the playlist.
         """
-        return self.client._delete(f"{self.endpoint}/playlists/{segment(playlist_id)}")
+        return self.client._delete(self._path("playlists", playlist_id))
     def playlist_track(self, playlist_id: str, track_id: str) -> Any:
         """
         Remove a track from a playlist.
@@ -237,4 +227,4 @@ class LibraryDelete:
             playlist_id (str): The ID of the playlist.
             track_id (str): The ID of the track to remove.
         """
-        return self.client._delete(f"{self.endpoint}/playlists/{segment(playlist_id)}/tracks/{segment(track_id)}")
+        return self.client._delete(self._path("playlists", playlist_id, "tracks", track_id))

@@ -6,6 +6,35 @@ Legend: `+` added · `~` changed / fixed · `-` removed
 
 ---
 
+## Ver 1.5.0 - Sep 25, 2026
+
+```diff
++ [DOC] CONTRIBUTING.md: setup, checks, project layout, how to add an endpoint, conventions and release steps
++ [DEV] .pre-commit-config.yaml runs ruff and mypy before each commit (pre-commit install); pre-commit added to the dev extra
++ [FEAT] Every exception can be imported from the package root (from VoltaLibPython import NotFoundError), and VoltaLibPython.__version__ gives the installed version
++ [FEAT] VoltaClient(client_id=..., client_secret=...): credentials can be passed as arguments, and take priority over CLIENT_ID / CLIENT_SECRET from the environment
++ [FEAT] VoltaClient.close(): stops the refresh thread and closes the HTTP session (what the context manager does on exit)
++ [TEST] Track payload tests built from the real API shapes (library and catalog tracks)
+
+~ [CHANGE] Importing the library no longer loads .env into os.environ: the .env file is only read when a VoltaClient is created without both credentials
+~ [FIX] A client that is neither used with `with` nor closed by hand is now closed automatically when the program exits (atexit)
+~ [FIX] The token file stores an absolute expiry time (expires_at) instead of a relative expires_in rewritten on exit: a token that expired while the program was stopped is no longer sent to the API (it used to cost a 401 and a retry). Old token files are still read, using the file's modification time
+~ [CHANGE] close() / stop_background_refresh() no longer rewrite the token file
+~ [CHANGE] The token file is saved by default in the user cache folder (%LOCALAPPDATA%\voltalib\ on Windows, ~/.cache/voltalib/ elsewhere) instead of config/token.json in the current directory, under a name that depends on CLIENT_ID. A new token is fetched once after upgrading; pass token_file="config/token.json" to keep the old location
+~ [CHANGE] The token file is created readable by the current user only (0600)
+~ [CHANGE] Every error message, log message and public docstring is now in English (they used to mix French and English)
+~ [DEV] Endpoint classes share an _Endpoint base: routes are built with self._path("playlists", playlist_id, "tracks"), which encodes every segment, instead of repeated f-strings
+~ [CI] The CI installs the package itself (pip install -e ".[dev]") instead of requirements.txt, lints with ruff instead of flake8 (whose second pass never failed the build), type-checks with mypy and reports test coverage; scripts/test_matrix.sh / .bat do the same
+~ [BUILD] The dev extra adds pytest-cov, ruff, mypy and types-requests; ruff and mypy are configured in pyproject.toml
+~ [FIX] library tracks() / albums() / artists() / playlists(): search and id are typed Optional[str]
+~ [DOC] README: scripts\test_matrix.bat was printed with a tab instead of \t
+~ [DEV] pytest settings moved from tests/pytest.ini (not read when pytest is run from the project root) to [tool.pytest.ini_options] in pyproject.toml; stale file names removed from test docstrings
+~ [FIX] post.library.track() and post.library.playlist_track() now send the track object the API requires (id, name, artist, album, plus artist_id / album_id / cover_url / duration_ms when known) instead of {"track_id": ...}, which the API rejected with a 422
+~ [CHANGE] post.library.track(track) and post.library.playlist_track(playlist_id, track) take the whole track dict (from get.library.tracks(), get.catalog.track() or search()), not just its ID; passing only an ID raises InvalidArgumentError with an explanation
+~ [FIX] post.library.playlist(description=...) : the API ignores the description on creation, so it is now set right after with a PUT
+~ [DOC] README and docs/POST.md: examples pass the whole track
+```
+
 ## Ver 1.4.0 - Sep 24, 2026
 
 ```diff

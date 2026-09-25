@@ -1,22 +1,22 @@
-"""Toutes les exceptions que la lib peut lever.
+"""Every exception the library can raise.
 
-Hiérarchie :
+Hierarchy:
 
-    VoltaAPIExceptions                  base de tout ce que lève la lib
-    ├── ConfigurationError              .env incomplet (CLIENT_ID / CLIENT_SECRET)
-    ├── InvalidArgumentError            argument invalide, détecté avant tout appel réseau (hérite aussi de ValueError)
-    ├── TokenStorageError               lecture / écriture du fichier de token impossible
-    ├── NetworkError                    la requête n'a pas pu aboutir (aucune réponse HTTP)
-    │   ├── ConnectionFailedError       serveur injoignable (DNS, connexion refusée, SSL...)
-    │   └── RequestTimeoutError         pas de réponse dans le délai imparti
-    ├── InvalidResponseError            réponse 2xx inexploitable (JSON invalide, champ attendu absent)
-    └── APIError                        l'API a répondu avec un code d'erreur HTTP
+    VoltaAPIExceptions                  base of everything the library raises
+    ├── ConfigurationError              missing credentials (CLIENT_ID / CLIENT_SECRET)
+    ├── InvalidArgumentError            invalid argument, caught before any network call (also a ValueError)
+    ├── TokenStorageError               the token file can't be read or written
+    ├── NetworkError                    the request got no HTTP response
+    │   ├── ConnectionFailedError       server unreachable (DNS, connection refused, SSL...)
+    │   └── RequestTimeoutError         no response within the timeout
+    ├── InvalidResponseError            unusable 2xx response (invalid JSON, expected field missing)
+    └── APIError                        the API answered with an HTTP error code
         ├── BadRequestError             400
         ├── AuthenticationError         401
-        ├── ForbiddenError              403 (scope manquant)
+        ├── ForbiddenError              403 (missing scope)
         ├── NotFoundError               404
         ├── ConflictError               409
-        ├── UnprocessableEntityError    422 (corps de requête refusé)
+        ├── UnprocessableEntityError    422 (request body rejected)
         ├── RateLimitError              429
         └── ServerError                 5xx
 """
@@ -28,22 +28,22 @@ from typing import Any, Mapping, Optional
 
 
 class VoltaAPIExceptions(Exception):
-    """Classe de base pour les erreurs de la lib."""
+    """Base class for every error raised by the library."""
     pass
 
 class ConfigurationError(VoltaAPIExceptions):
-    """Levée quand la configuration locale est incomplète (ex. CLIENT_ID absent du .env)."""
+    """Raised when the local configuration is incomplete (e.g. CLIENT_ID missing)."""
     pass
 
 class InvalidArgumentError(VoltaAPIExceptions, ValueError):
-    """Levée quand un argument passé à une méthode est invalide, avant tout
-    appel réseau. Hérite aussi de ValueError pour rester compatible avec
-    le code qui attrapait déjà ValueError."""
+    """Raised when an argument passed to a method is invalid, before any
+    network call. Also a ValueError, so code that already caught ValueError
+    keeps working."""
     pass
 
 class TokenStorageError(VoltaAPIExceptions):
-    """Levée quand le fichier de token ne peut pas être lu ou écrit
-    (permissions, disque plein, chemin invalide...)."""
+    """Raised when the token file can't be read or written (permissions,
+    full disk, invalid path...)."""
     def __init__(self, message: str, path: Optional[str] = None):
         super().__init__(message)
         self.message = message
@@ -51,11 +51,11 @@ class TokenStorageError(VoltaAPIExceptions):
 
     def __str__(self) -> str:
         if self.path:
-            return f"{self.message}\n  -> fichier : {self.path}"
+            return f"{self.message}\n  -> file: {self.path}"
         return self.message
 
 class NetworkError(VoltaAPIExceptions):
-    """Levée quand la requête n'a obtenu aucune réponse HTTP."""
+    """Raised when the request got no HTTP response."""
     def __init__(self, message: str, url: Optional[str] = None):
         super().__init__(message)
         self.message = message
@@ -67,16 +67,16 @@ class NetworkError(VoltaAPIExceptions):
         return self.message
 
 class ConnectionFailedError(NetworkError):
-    """Levée quand le serveur est injoignable (DNS, connexion refusée, SSL...)."""
+    """Raised when the server can't be reached (DNS, connection refused, SSL...)."""
     pass
 
 class RequestTimeoutError(NetworkError):
-    """Levée quand le serveur ne répond pas dans le délai imparti."""
+    """Raised when the server doesn't answer within the timeout."""
     pass
 
 class InvalidResponseError(VoltaAPIExceptions):
-    """Levée quand l'API répond avec succès mais que la réponse est
-    inexploitable (JSON invalide, champ attendu absent)."""
+    """Raised when the API answers with a success code but the response is
+    unusable (invalid JSON, expected field missing)."""
     def __init__(self, message: str, response_text: Optional[str] = None):
         super().__init__(message)
         self.message = message
@@ -85,11 +85,11 @@ class InvalidResponseError(VoltaAPIExceptions):
     def __str__(self) -> str:
         if self.response_text:
             excerpt = self.response_text.strip()[:200]
-            return f"{self.message}\n  -> réponse reçue : {excerpt}"
+            return f"{self.message}\n  -> response received: {excerpt}"
         return self.message
 
 class APIError(VoltaAPIExceptions):
-    """Levée quand l'API renvoie un code d'erreur HTTP."""
+    """Raised when the API returns an HTTP error code."""
     def __init__(self, message: str, status_code: int | None = None, response_text: str | None = None):
         super().__init__(message)
         self.message = message
@@ -98,7 +98,7 @@ class APIError(VoltaAPIExceptions):
 
     @property
     def detail(self) -> str | None:
-        """Message d'erreur renvoyé par l'API (champ `detail` du JSON), ou le texte brut."""
+        """Error message returned by the API (the JSON `detail` field), or the raw text."""
         if not self.response_text:
             return None
         try:
@@ -120,34 +120,34 @@ class APIError(VoltaAPIExceptions):
         return text
 
 class BadRequestError(APIError):
-    """Levée en cas d'erreur 400 (Requête invalide / paramètres manquants)."""
+    """Raised on a 400 error (invalid request / missing parameters)."""
     pass
 
 class AuthenticationError(APIError):
-    """Levée en cas d'erreur 401 (Non autorisé / Token invalide)."""
+    """Raised on a 401 error (unauthorized / invalid token)."""
     pass
 
 class ForbiddenError(APIError):
-    """Levée en cas d'erreur 403 (Accès refusé, en général un scope manquant)."""
+    """Raised on a 403 error (access denied, usually a missing scope)."""
     pass
 
 class NotFoundError(APIError):
-    """Levée en cas d'erreur 404 (Ressource introuvable)."""
+    """Raised on a 404 error (resource not found)."""
     pass
 
 class ConflictError(APIError):
-    """Levée en cas d'erreur 409 (Conflit, ex. ressource déjà existante)."""
+    """Raised on a 409 error (conflict, e.g. the resource already exists)."""
     pass
 
 class UnprocessableEntityError(APIError):
-    """Levée en cas d'erreur 422 (Corps de requête refusé par l'API)."""
+    """Raised on a 422 error (request body rejected by the API)."""
     pass
 
 class RateLimitError(APIError):
-    """Levée en cas d'erreur 429 (Trop de requêtes).
+    """Raised on a 429 error (too many requests).
 
-    `retry_after` : nombre de secondes à attendre avant de réessayer, si
-    l'API l'a indiqué (header `Retry-After`), sinon None.
+    `retry_after`: seconds to wait before retrying, if the API sent them
+    (`Retry-After` header), otherwise None.
     """
     def __init__(self, message: str, status_code: int | None = None, response_text: str | None = None,
                  retry_after: int | None = None):
@@ -157,11 +157,11 @@ class RateLimitError(APIError):
     def __str__(self) -> str:
         text = super().__str__()
         if self.retry_after is not None:
-            text += f"\n  -> réessaie dans {self.retry_after} s"
+            text += f"\n  -> retry in {self.retry_after} s"
         return text
 
 class ServerError(APIError):
-    """Levée en cas d'erreur serveur (500, 502, 503, 504)."""
+    """Raised on a server error (500, 502, 503, 504)."""
     pass
 
 
@@ -174,10 +174,10 @@ def _format_detail(value: Any) -> str:
         for item in value:
             if isinstance(item, dict) and "msg" in item:
                 loc = ".".join(str(p) for p in item.get("loc", []) if p != "body")
-                parts.append(f"{loc} : {item['msg']}" if loc else str(item["msg"]))
+                parts.append(f"{loc}: {item['msg']}" if loc else str(item["msg"]))
             else:
                 parts.append(str(item))
-        return " ; ".join(parts)
+        return "; ".join(parts)
     return str(value)
 
 
@@ -192,13 +192,13 @@ def _parse_retry_after(headers: Optional[Mapping[str, str]]) -> int | None:
 
 
 _ERRORS_BY_STATUS: dict[int, tuple[type[APIError], str]] = {
-    400: (BadRequestError, "Requête invalide"),
-    401: (AuthenticationError, "Authentification refusée"),
-    403: (ForbiddenError, "Accès refusé (scope manquant sur la clé API ?)"),
-    404: (NotFoundError, "Ressource introuvable"),
-    409: (ConflictError, "Conflit avec l'état actuel de la ressource"),
-    422: (UnprocessableEntityError, "Données envoyées refusées par l'API"),
-    429: (RateLimitError, "Trop de requêtes, réessaie dans quelques instants"),
+    400: (BadRequestError, "Invalid request"),
+    401: (AuthenticationError, "Authentication refused"),
+    403: (ForbiddenError, "Access denied (missing scope on the API key?)"),
+    404: (NotFoundError, "Resource not found"),
+    409: (ConflictError, "Conflict with the current state of the resource"),
+    422: (UnprocessableEntityError, "Data rejected by the API"),
+    429: (RateLimitError, "Too many requests, retry in a moment"),
 }
 
 
@@ -208,17 +208,17 @@ def error_from_response(
     context: str,
     headers: Optional[Mapping[str, str]] = None,
 ) -> APIError:
-    """Construit l'exception typée adaptée au code HTTP, avec un message lisible.
+    """Build the typed exception matching the HTTP code, with a readable message.
 
-    `context` décrit l'action qui a échoué (ex. "Échec du rafraîchissement du token").
+    `context` describes the action that failed (e.g. "Token refresh failed").
     """
     if status_code in _ERRORS_BY_STATUS:
         cls, reason = _ERRORS_BY_STATUS[status_code]
     elif 500 <= status_code < 600:
-        cls, reason = ServerError, "Erreur du serveur Volta"
+        cls, reason = ServerError, "Volta server error"
     else:
-        cls, reason = APIError, "Erreur HTTP inattendue"
-    message = f"{context} : {reason}"
+        cls, reason = APIError, "Unexpected HTTP error"
+    message = f"{context}: {reason}"
     if cls is RateLimitError:
         return RateLimitError(message, status_code=status_code, response_text=response_text,
                               retry_after=_parse_retry_after(headers))

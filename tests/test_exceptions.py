@@ -75,7 +75,7 @@ class TestHttpErrors:
         fake_session.post_responses.append(FakeResponse(409, {"detail": "already in library"}))
 
         with pytest.raises(ConflictError) as exc:
-            client.post.library.track("t1")
+            client.post.library.track({"id": "t1", "name": "X", "artist": "Y", "album": "Z"})
 
         assert exc.value.status_code == 409
         assert exc.value.detail == "already in library"
@@ -92,7 +92,7 @@ class TestHttpErrors:
         with pytest.raises(UnprocessableEntityError) as exc:
             client.post.library.playlist("x")
 
-        assert exc.value.detail == "track_id : field required ; name : too long"
+        assert exc.value.detail == "track_id: field required; name: too long"
         assert "[422]" in str(exc.value)
 
     def test_429_exposes_retry_after(self, make_client, fake_session):
@@ -200,7 +200,7 @@ class TestInvalidTokenResponse:
         return VoltaClient(token_file=str(tmp_path / "token.json"))
 
     def test_non_json_token_response(self, tmp_path, monkeypatch):
-        with pytest.raises(InvalidResponseError, match="pas du JSON") as exc:
+        with pytest.raises(InvalidResponseError, match="not JSON") as exc:
             self._client_with_token_response(
                 tmp_path, monkeypatch, _NotJsonResponse(200, text="<html>maintenance</html>")
             )
@@ -279,3 +279,21 @@ class TestInvalidArguments:
         with pytest.raises(InvalidArgumentError):
             client.put.library.playlist("pl1")
         assert fake_session.calls == []
+
+
+class TestPublicImports:
+    def test_every_exception_is_importable_from_the_package(self):
+        import VoltaLibPython
+        from VoltaLibPython import exceptions
+
+        for name in VoltaLibPython.__all__:
+            assert hasattr(VoltaLibPython, name)
+        # Toute classe d'exception du module est exposée à la racine du package.
+        for name, value in vars(exceptions).items():
+            if isinstance(value, type) and issubclass(value, Exception) and not name.startswith("_"):
+                assert getattr(VoltaLibPython, name) is value
+
+    def test_version_is_exposed(self):
+        import VoltaLibPython
+
+        assert isinstance(VoltaLibPython.__version__, str)

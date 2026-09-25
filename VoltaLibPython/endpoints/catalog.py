@@ -1,17 +1,13 @@
 from __future__ import annotations
 
-from typing import Any, TYPE_CHECKING
+from typing import Any
 
-from ._url import segment
-
-if TYPE_CHECKING:
-    from ..client import VoltaClient
+from ._base import _Endpoint
 
 
-class Catalog:
-    def __init__(self, client: "VoltaClient") -> None:
-        self.client = client
-        self.endpoint = "/api/v1"
+class Catalog(_Endpoint):
+    endpoint = "/api/v1"
+
     def search(self, query: str) -> Any:
         """
         Search for tracks, albums, artists, and playlists globally.
@@ -19,7 +15,7 @@ class Catalog:
         Args:
             query (str): The search query string.
         """
-        return self.client._get(f"{self.endpoint}/search", params={"q": query})
+        return self.client._get(self._path("search"), params={"q": query})
     def artist(self, id: str) -> Any:
         """
         Get details of a specific artist by their ID.
@@ -28,7 +24,7 @@ class Catalog:
         Args:
             id (str): The ID of the artist.
         """
-        return self.client._get(f"{self.endpoint}/artists/{segment(id)}")
+        return self.client._get(self._path("artists", id))
     def album(self, id: str) -> Any:
         """
         Get details of a specific album by its ID.
@@ -37,7 +33,7 @@ class Catalog:
         Args:
             id (str): The ID of the album.
         """
-        return self.client._get(f"{self.endpoint}/album/{segment(id)}")
+        return self.client._get(self._path("album", id))
     def track(self, id: str) -> Any:
         """
         Get metadata of a specific track by its ID.
@@ -45,7 +41,7 @@ class Catalog:
         Args:
             id (str): The ID of the track.
         """
-        return self.client._get(f"{self.endpoint}/track/{segment(id)}")
+        return self.client._get(self._path("track", id))
     def playlist(self, id: str) -> Any:
         """
         Get details of a specific playlist by its ID.
@@ -54,12 +50,12 @@ class Catalog:
         Args:
             id (str): The ID of the playlist.
         """
-        return self.client._get(f"{self.endpoint}/playlist/{segment(id)}")
+        return self.client._get(self._path("playlist", id))
     def home(self) -> Any:
         """
         Get the home page data, including recommended tracks, albums, artists, and playlists.
         """
-        return self.client._get(f"{self.endpoint}/home")
+        return self.client._get(self._path("home"))
     def stream(self, id:str) -> Any:
         """
         Get info of the song andthe streaming url
@@ -68,12 +64,12 @@ class Catalog:
         Args:
             id (str): The ID of the track.
         """
-        return self.client._get(f"{self.endpoint}/stream", params={"track_id": id})
+        return self.client._get(self._path("stream"), params={"track_id": id})
     def state(self) -> Any:
         """
         Get the current playback state (endpoint: /playback/state).
         """
-        return self.client._get(f"{self.endpoint}/playback/state")
+        return self.client._get(self._path("playback", "state"))
     def me(self) -> Any:
         """
         Get the current user's public profile: `sub` (user ID), `name`,
@@ -82,4 +78,4 @@ class Catalog:
 
         Scope: profile:read
         """
-        return self.client._get(f"{self.endpoint}/auth/me")
+        return self.client._get(self._path("auth", "me"))

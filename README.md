@@ -276,6 +276,8 @@ Catch `VoltaAPIExceptions` alone to handle every error the library can raise.
 
 ## 🧪 Testing
 
+Want to contribute? See [CONTRIBUTING.md](CONTRIBUTING.md) for the setup, the checks, the conventions and the release steps.
+
 The test suite uses `pytest` with a fully mocked HTTP layer — no real network calls, no real credentials needed.
 
 ```bash

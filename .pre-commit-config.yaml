@@ -1,0 +1,18 @@
+# Vérifications lancées avant chaque commit (les mêmes que la CI).
+# Installation : pip install -e ".[dev]" puis pre-commit install
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.16.9
+    hooks:
+      - id: ruff-check
+
+  # mypy tourne dans l'environnement du projet (language: system) pour voir
+  # requests, python-dotenv et types-requests installés par l'extra [dev].
+  - repo: local
+    hooks:
+      - id: mypy
+        name: mypy
+        entry: mypy
+        language: system
+        types: [python]
+        pass_filenames: false

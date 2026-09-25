@@ -9,6 +9,8 @@ Legend: `+` added · `~` changed / fixed · `-` removed
 ## Unreleased
 
 ```diff
++ [DOC] CONTRIBUTING.md: setup, checks, project layout, how to add an endpoint, conventions and release steps
++ [DEV] .pre-commit-config.yaml runs ruff and mypy before each commit (pre-commit install); pre-commit added to the dev extra
 + [FEAT] Every exception can be imported from the package root (from VoltaLibPython import NotFoundError), and VoltaLibPython.__version__ gives the installed version
 + [FEAT] VoltaClient(client_id=..., client_secret=...): credentials can be passed as arguments, and take priority over CLIENT_ID / CLIENT_SECRET from the environment
 + [FEAT] VoltaClient.close(): stops the refresh thread and closes the HTTP session (what the context manager does on exit)

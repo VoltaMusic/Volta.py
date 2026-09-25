@@ -57,3 +57,7 @@ select = ["E4", "E7", "E9", "F", "I", "B"]
 
 [tool.mypy]
 files = ["VoltaLibPython"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]

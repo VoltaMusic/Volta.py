@@ -26,6 +26,7 @@ Legend: `+` added · `~` changed / fixed · `-` removed
 ~ [BUILD] The dev extra adds pytest-cov, ruff, mypy and types-requests; ruff and mypy are configured in pyproject.toml
 ~ [FIX] library tracks() / albums() / artists() / playlists(): search and id are typed Optional[str]
 ~ [DOC] README: scripts\test_matrix.bat was printed with a tab instead of \t
+~ [DEV] pytest settings moved from tests/pytest.ini (not read when pytest is run from the project root) to [tool.pytest.ini_options] in pyproject.toml; stale file names removed from test docstrings
 ~ [FIX] post.library.track() and post.library.playlist_track() now send the track object the API requires (id, name, artist, album, plus artist_id / album_id / cover_url / duration_ms when known) instead of {"track_id": ...}, which the API rejected with a 422
 ~ [CHANGE] post.library.track(track) and post.library.playlist_track(playlist_id, track) take the whole track dict (from get.library.tracks(), get.catalog.track() or search()), not just its ID; passing only an ID raises InvalidArgumentError with an explanation
 ~ [FIX] post.library.playlist(description=...) : the API ignores the description on creation, so it is now set right after with a PUT

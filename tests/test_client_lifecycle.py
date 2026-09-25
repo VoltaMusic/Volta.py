@@ -1,8 +1,8 @@
 """
 Tests du cycle de vie de VoltaClient : chargement/sauvegarde du token,
 arrêt du thread de fond, context manager. Ces tests ne sont pas liés à un
-verbe HTTP en particulier (contrairement à test_get.py et
-test_post_put_delete.py).
+verbe HTTP en particulier (contrairement à test_get_*.py, test_post.py,
+test_put.py et test_delete.py).
 
 Lancer avec : pytest tests/test_client_lifecycle.py -v
 """

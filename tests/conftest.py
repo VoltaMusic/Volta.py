@@ -5,12 +5,8 @@ Aucune requête réseau réelle n'est faite : `VoltaClient._session` est
 remplacée par une fausse session (`FakeSession`) dont on contrôle
 entièrement les réponses, dans l'ordre où elles doivent être renvoyées.
 
-Adapter si besoin :
-- Le chemin d'import `from VoltaLibPython.client import VoltaClient`
-  suppose que ces tests tournent depuis la racine du projet, avec un
-  package `VoltaLibPython` contenant `client.py` et `exceptions.py`.
-  Si ton package s'appelle autrement, ajuste l'import dans ce fichier
-  et dans test_volta_client.py.
+Les tests se lancent depuis la racine du projet (`pytest`) : la config est
+dans la section [tool.pytest.ini_options] de pyproject.toml.
 """
 
 from __future__ import annotations

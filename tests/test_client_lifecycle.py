@@ -145,3 +145,37 @@ class TestCredentials:
         client = make_client()
         assert client.client_id == "test_client_id"
         assert client.client_secret == "test_client_secret"
+
+
+class TestDotenv:
+    def test_import_does_not_load_dotenv(self, tmp_path):
+        import os
+        import subprocess
+        import sys
+
+        (tmp_path / ".env").write_text("VOLTA_DOTENV_PROBE=loaded")
+        code = "import os, VoltaLibPython; print(os.environ.get('VOLTA_DOTENV_PROBE', 'absent'))"
+        env = {**os.environ, "PYTHONPATH": os.getcwd()}
+        env.pop("VOLTA_DOTENV_PROBE", None)
+        out = subprocess.run(
+            [sys.executable, "-c", code], cwd=tmp_path, env=env, capture_output=True, text=True, check=True
+        )
+        assert out.stdout.strip() == "absent"
+
+    def test_dotenv_not_read_when_credentials_are_given(self, tmp_path, monkeypatch):
+        calls = []
+        monkeypatch.setattr("VoltaLibPython.client.load_dotenv", lambda *a, **k: calls.append(1))
+        monkeypatch.setattr(VoltaClient, "_load_token", lambda self: {"access_token": "t", "expires_in": 3600})
+
+        client = VoltaClient(token_file=str(tmp_path / "token.json"), client_id="id", client_secret="secret")
+        client.stop_background_refresh()
+        assert calls == []
+
+    def test_dotenv_read_when_a_credential_is_missing(self, tmp_path, monkeypatch):
+        calls = []
+        monkeypatch.setattr("VoltaLibPython.client.load_dotenv", lambda *a, **k: calls.append(1))
+        monkeypatch.setattr(VoltaClient, "_load_token", lambda self: {"access_token": "t", "expires_in": 3600})
+
+        client = VoltaClient(token_file=str(tmp_path / "token.json"))
+        client.stop_background_refresh()
+        assert calls == [1]

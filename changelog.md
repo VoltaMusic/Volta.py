@@ -13,6 +13,7 @@ Legend: `+` added · `~` changed / fixed · `-` removed
 + [FEAT] VoltaClient(client_id=..., client_secret=...): credentials can be passed as arguments, and take priority over CLIENT_ID / CLIENT_SECRET from the environment
 + [TEST] Track payload tests built from the real API shapes (library and catalog tracks)
 
+~ [CHANGE] Importing the library no longer loads .env into os.environ: the .env file is only read when a VoltaClient is created without both credentials
 ~ [FIX] post.library.track() and post.library.playlist_track() now send the track object the API requires (id, name, artist, album, plus artist_id / album_id / cover_url / duration_ms when known) instead of {"track_id": ...}, which the API rejected with a 422
 ~ [CHANGE] post.library.track(track) and post.library.playlist_track(playlist_id, track) take the whole track dict (from get.library.tracks(), get.catalog.track() or search()), not just its ID; passing only an ID raises InvalidArgumentError with an explanation
 ~ [FIX] post.library.playlist(description=...) : the API ignores the description on creation, so it is now set right after with a PUT

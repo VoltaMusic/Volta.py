@@ -30,8 +30,6 @@ from .session import (
 from .progress import _Spinner
 from .endpoints.verbs import Get, Post, Put, Delete
 
-load_dotenv()
-
 logger = logging.getLogger(__name__)
 
 
@@ -47,6 +45,10 @@ class VoltaClient:
         self.token_file = token_file
         self.base_url = base_url
         # Les identifiants passés en argument priment sur l'environnement.
+        # Le .env n'est lu qu'ici, et seulement s'il manque quelque chose :
+        # importer la lib ne modifie jamais os.environ.
+        if not (client_id and client_secret):
+            load_dotenv()
         self.client_id = client_id or os.getenv("CLIENT_ID")
         self.client_secret = client_secret or os.getenv("CLIENT_SECRET")
         self.show_progress = show_progress

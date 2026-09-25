@@ -11,6 +11,7 @@ Legend: `+` added · `~` changed / fixed · `-` removed
 ```diff
 + [FEAT] Every exception can be imported from the package root (from VoltaLibPython import NotFoundError), and VoltaLibPython.__version__ gives the installed version
 + [FEAT] VoltaClient(client_id=..., client_secret=...): credentials can be passed as arguments, and take priority over CLIENT_ID / CLIENT_SECRET from the environment
++ [FEAT] VoltaClient.close(): stops the refresh thread, saves the remaining token time and closes the HTTP session (what the context manager does on exit)
 + [TEST] Track payload tests built from the real API shapes (library and catalog tracks)
 
 ~ [CHANGE] Importing the library no longer loads .env into os.environ: the .env file is only read when a VoltaClient is created without both credentials

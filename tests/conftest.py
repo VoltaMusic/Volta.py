@@ -120,7 +120,7 @@ def make_client(tmp_path, monkeypatch, fake_session):
       mémoire (pas de fichier existant à lire, pas de refresh initial).
     - La session interne est remplacée par `fake_session` juste après
       construction.
-    - Tous les clients créés sont proprement arrêtés (`stop_background_refresh`)
+    - Tous les clients créés sont proprement fermés (`close`)
       à la fin du test pour ne laisser traîner aucun thread.
     """
     created: list[VoltaClient] = []
@@ -139,4 +139,4 @@ def make_client(tmp_path, monkeypatch, fake_session):
     yield _make
 
     for client in created:
-        client.stop_background_refresh()
+        client.close()

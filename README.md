@@ -63,7 +63,7 @@ with VoltaClient() as client:
 
 Using the context manager (`with ... as client:`) is the recommended way to use `VoltaClient` — it makes sure the background refresh thread stops cleanly and the remaining token time gets saved when you're done.
 
-If you don't use a context manager, call `client.stop_background_refresh()` yourself before your program exits.
+If you don't use a context manager, call `client.close()` yourself when you're done: it stops the refresh thread, saves the remaining token time and closes the HTTP session.
 
 To see a small loading spinner (on stderr) while a slow request is running, pass `show_progress=True`:
 
@@ -270,7 +270,7 @@ Catch `VoltaAPIExceptions` alone to handle every error the library can raise.
 - On first use, if no token file exists yet, the client fetches one via `client_credentials` and saves it to `config/token.json` (configurable via `token_file=` in `VoltaClient(...)`).
 - A background thread refreshes the token shortly before it expires — no request ever waits on this.
 - If the API rejects a request with `401` (token invalid sooner than expected), the client refreshes immediately and retries **once**, silently.
-- On `stop_background_refresh()` (called automatically by the context manager, or manually), the real remaining time is written back to the token file — so restarting your program soon after doesn't waste a perfectly valid token.
+- On `close()` (called automatically by the context manager, or manually), the real remaining time is written back to the token file — so restarting your program soon after doesn't waste a perfectly valid token.
 
 ---
 

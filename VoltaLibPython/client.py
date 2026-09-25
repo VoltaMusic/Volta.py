@@ -188,12 +188,18 @@ class VoltaClient:
             self._refresh_timer = None
         self._save_remaining_time()
 
+    def close(self) -> None:
+        """Arrête le rafraîchissement automatique, sauvegarde le temps
+        restant du token et ferme la session HTTP. Peut être appelée
+        plusieurs fois sans effet de bord."""
+        self.stop_background_refresh()
+        self._session.close()
+
     def __enter__(self) -> "VoltaClient":
         return self
 
     def __exit__(self, *exc_info: object) -> None:
-        self.stop_background_refresh()
-        self._session.close()
+        self.close()
 
     def _auth_headers(self) -> dict[str, str]:
         with self._token_lock:

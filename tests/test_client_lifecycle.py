@@ -179,3 +179,17 @@ class TestDotenv:
         client = VoltaClient(token_file=str(tmp_path / "token.json"))
         client.stop_background_refresh()
         assert calls == [1]
+
+
+class TestClose:
+    def test_close_stops_refresh_and_closes_session(self, make_client, fake_session):
+        client = make_client()
+        client.close()
+        assert client._closed is True
+        assert client._refresh_timer is None
+        assert fake_session.closed is True
+
+    def test_close_is_idempotent(self, make_client):
+        client = make_client()
+        client.close()
+        client.close()  # ne doit pas planter
